@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  background: #f0f9ff;
+  color: #0c4a6e;
+}
+
+.involution-low {
+  color: #52c41a;
+}
+.involution-medium {
+  color: #faad14;
+}
+.involution-high {
+  color: #ff4d4f;
+}
+
+.bg-involution-low {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+.bg-involution-medium {
+  background-color: #fffbe6;
+  border-color: #ffe58f;
+}
+.bg-involution-high {
+  background-color: #fff2f0;
+  border-color: #ffccc7;
+}
+
+/* 打印/导出样式 */
+.report-export-root {
+  background: #fff;
+  padding: 24px;
+}
+.report-export-root .no-print {
+  display: none !important;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+}
+
+/* 沙图画布容器 */
+.sandbox-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
