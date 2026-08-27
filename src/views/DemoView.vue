@@ -72,7 +72,7 @@ function startOwn() {
         <div class="flex flex-wrap gap-4 mt-4 text-sm text-gray-700">
           <div>🎯 目标岗位：<b>{{ plan.targetRole }}</b></div>
           <div>💰 目标薪资：<b class="text-brand">{{ plan.targetSalary[0] }}-{{ plan.targetSalary[1] }}K</b></div>
-          <div>📈 3 年薪资上限：<b>{{ topRoute.salaryCurve[3].max }}K</b></div>
+          <div>📈 {{ (topRoute.salaryCurve.length - 1) >= 5 ? '8 年' : '3 年' }}薪资上限：<b>{{ topRoute.salaryCurve[topRoute.salaryCurve.length - 1].max }}K</b></div>
         </div>
       </NCard>
 

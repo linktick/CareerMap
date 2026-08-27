@@ -11,6 +11,8 @@ import { useModeStore } from '@/stores/mode'
 import { useSandboxStore } from '@/stores/sandbox'
 import { CHINA_CITY_OPTIONS } from '@/utils/chinaCities'
 import type { UserProfile } from '@/types/career'
+import type { ResumeParseResult } from '@/types/research'
+import ResumeUploader from '@/components/wizard/ResumeUploader.vue'
 
 const router = useRouter()
 const profileStore = useProfileStore()
@@ -50,6 +52,12 @@ function updateField<K extends keyof UserProfile>(key: K, value: UserProfile[K])
   profileStore.update({ [key]: value } as Partial<UserProfile>)
 }
 
+/** 简历视觉解析完成后，组件已直接更新 store，这里同步本地表单 */
+function onResumeParsed(result: ResumeParseResult) {
+  form.value = { ...profileStore.profile }
+  if (result.identity) form.value.identity = result.identity
+}
+
 function move(delta: number) {
   // 从基础信息页（第 1 步）点击“下一步”时，校验必填项
   if (current.value === 0 && delta > 0) {
@@ -62,7 +70,7 @@ function move(delta: number) {
 }
 
 const identityLabel = computed(() => ({
-  student: '在校生', fresh: '应届毕业生', '0_1y': '0~1年', '1_3y': '1~3年',
+  student: '在校生', fresh: '应届毕业生', professional: '已有职场经历',
 } as const)[form.value.identity])
 
 const riskLabel = computed(() => ({
@@ -103,15 +111,17 @@ async function submit() {
 
       <!-- Step 1 -->
       <div v-show="current === 0">
+        <div class="mb-6">
+          <ResumeUploader @parsed="onResumeParsed" />
+        </div>
         <NForm label-placement="top">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <NFormItem label="你的身份" required>
               <NRadioGroup :value="form.identity" @update:value="(v) => updateField('identity', v)">
                 <NSpace vertical>
-                  <NRadio value="student">在校生</NRadio>
+                  <NRadio value="student">在校生（临近毕业）</NRadio>
                   <NRadio value="fresh">应届毕业生</NRadio>
-                  <NRadio value="0_1y">0~1 年职场人</NRadio>
-                  <NRadio value="1_3y">1~3 年职场人</NRadio>
+                  <NRadio value="professional">已有职场经历 / 想做职业规划</NRadio>
                 </NSpace>
               </NRadioGroup>
             </NFormItem>
@@ -267,6 +277,30 @@ async function submit() {
                 </NSpace>
               </NRadioGroup>
             </NFormItem>
+            <NFormItem label="推演周期">
+              <div class="w-full rounded-xl border p-3.5"
+                :class="form.deepMode ? 'border-purple-300 bg-purple-50/50' : 'border-gray-200'">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-medium text-gray-800">
+                      长周期深度推演
+                      <NTag size="tiny" type="warning" :bordered="false" class="ml-1">5~8 年</NTag>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 leading-relaxed">
+                      关闭：输出 3 年期职业规划；开启：输出 8 年超长周期连贯路线，
+                      含管理/专家分岔点、35 岁分流与 AI 替代风险，全程上下文一致、逻辑自洽
+                    </div>
+                  </div>
+                  <NSwitch
+                    :value="!!form.deepMode"
+                    @update:value="(v) => updateField('deepMode', v)"
+                  />
+                </div>
+                <div v-if="form.deepMode" class="text-[11px] text-purple-700 mt-2">
+                  ⏳ 长周期推演内容量更大，AI 模式下生成时间会更长，推演后将自动执行深度市场调研与事实校验
+                </div>
+              </div>
+            </NFormItem>
           </div>
         </NForm>
       </div>
@@ -293,7 +327,19 @@ async function submit() {
           </NDescriptionsItem>
           <NDescriptionsItem label="最低月薪">{{ form.minSalaryK }}K</NDescriptionsItem>
           <NDescriptionsItem label="风险偏好">{{ riskLabel }}</NDescriptionsItem>
+          <NDescriptionsItem label="简历解析">
+            <span v-if="form.resume" class="text-green-600">✓ 已识别并适配参数</span>
+            <span v-else class="text-gray-400">未上传</span>
+          </NDescriptionsItem>
+          <NDescriptionsItem label="推演周期">
+            <span :class="form.deepMode ? 'text-purple-600 font-medium' : ''">
+              {{ form.deepMode ? '长周期深度推演（8 年）' : '常规 3 年期' }}
+            </span>
+          </NDescriptionsItem>
         </NDescriptions>
+        <NAlert v-if="form.deepMode" type="info" :show-icon="false" class="mt-4 !py-2">
+          <span class="text-xs">推演完成后将自动执行 Agent 链式市场调研（近 3~6 个月 JD、招聘动态、赛道热度、职场舆情、行业风险）与事实校验，输出置信度评分与风险修正建议。</span>
+        </NAlert>
       </div>
 
       <div class="flex justify-between mt-10">
@@ -302,7 +348,7 @@ async function submit() {
           <NButton v-if="current > 0" @click="move(-1)">上一步</NButton>
           <NButton v-if="current < 3" type="primary" @click="move(1)">下一步</NButton>
           <NButton v-if="current === 3" type="primary" @click="submit">
-            开始沙盘推演 →
+            {{ form.deepMode ? '开始长周期深度推演 →' : '开始沙盘推演 →' }}
           </NButton>
         </NSpace>
       </div>

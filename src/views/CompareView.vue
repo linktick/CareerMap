@@ -79,7 +79,7 @@ const dimensions = computed<RowData[]>(() => {
       render: (v) => `<span style="color:#666">${scoreStars(Number(v) || 0)}</span>`,
     },
     {
-      key: 'salary3', label: '3 年薪资上限 (K)',
+      key: 'salary3', label: `${(sandbox.sandbox?.horizon ?? 3) >= 5 ? '8 年' : '3 年'}薪资上限 (K)`,
       values: makeVal((_r, row) => row.threeYearSalaryMax),
       render: (v) => `<b style="color:#1677ff;font-size:16px">${v === '-' ? '-' : v + 'K'}</b>`,
     },

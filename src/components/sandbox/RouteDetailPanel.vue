@@ -20,6 +20,13 @@ const emit = defineEmits<{
 const salaryEl = ref<HTMLDivElement>()
 let salaryChart: echarts.ECharts | null = null
 
+/** 短阶段标签：现在 / Y1 / Y2 ...（随路线节点数自适应，长周期最多到 Y8） */
+const stageShortLabels = computed(() => {
+  const len = props.route?.nodes.length || 4
+  return ['现在', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8'].slice(0, len)
+})
+const horizonYears = computed(() => (props.route?.nodes.length || 4) - 1)
+
 function renderSalary() {
   if (!salaryEl.value || !props.route) return
   if (!salaryChart) salaryChart = echarts.init(salaryEl.value)
@@ -29,9 +36,9 @@ function renderSalary() {
     tooltip: { trigger: 'axis' },
     xAxis: {
       type: 'category',
-      data: ['现在', 'Y1', 'Y2', 'Y3'],
+      data: stageShortLabels.value,
       axisLine: { lineStyle: { color: '#d1d5db' } },
-      axisLabel: { color: '#9ca3af', fontSize: 11 },
+      axisLabel: { color: '#9ca3af', fontSize: 11, interval: 0 },
       axisTick: { show: false },
     },
     yAxis: {
@@ -104,7 +111,10 @@ const involutionPercent = computed(() => props.route ? props.route.involutionSco
     <div class="flex-1 overflow-y-auto p-5 space-y-5">
       <!-- Salary -->
       <div>
-        <div class="text-sm font-semibold text-gray-800 mb-2">3 年薪资走势</div>
+        <div class="text-sm font-semibold text-gray-800 mb-2">
+          {{ horizonYears }} 年薪资走势
+          <span v-if="horizonYears >= 5" class="ml-1 text-[10px] text-purple-600 font-normal">长周期深度推演</span>
+        </div>
         <div ref="salaryEl" class="w-full h-[160px]" />
         <div class="text-xs text-gray-400 text-center">上：薪资上限，下：薪资下限（K/月）</div>
       </div>
@@ -131,8 +141,11 @@ const involutionPercent = computed(() => props.route ? props.route.involutionSco
         <div class="text-sm font-semibold text-gray-800 mb-2">阶段瓶颈</div>
         <div class="space-y-2">
           <div v-for="(n, i) in route.nodes" :key="i" class="flex gap-2 text-xs">
-            <div class="w-12 shrink-0 text-gray-400">{{ ['现在', 'Y1', 'Y2', 'Y3'][i] }}</div>
-            <div class="text-gray-700 leading-relaxed">{{ n.bottleneck }}</div>
+            <div class="w-12 shrink-0 text-gray-400">{{ stageShortLabels[i] }}</div>
+            <div class="text-gray-700 leading-relaxed">
+              <span class="text-gray-500 mr-1">{{ n.title }}</span>
+              {{ n.bottleneck }}
+            </div>
           </div>
         </div>
       </div>

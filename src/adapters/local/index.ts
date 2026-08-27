@@ -10,6 +10,19 @@ import type {
 import { RAW_ROUTES, type RawRoute } from './dataset'
 import { findTemplate } from './growthTemplates'
 import { levelToInvolution } from '@/utils/format'
+import {
+  extrapolateLongCycle,
+  localRunMarketResearch,
+  localValidateSandbox,
+} from './research'
+import type {
+  MarketResearchReport,
+  ResearchInput,
+  ResearchStepState,
+  ResumeParseResult,
+  SandboxValidation,
+  ValidationInput,
+} from '@/types/research'
 
 // 简单确定性字符串 hash，用来产生稳定的扰动
 function hashString(s: string): number {
@@ -163,18 +176,15 @@ function schoolTierFactor(tier: UserProfile['schoolTier'] | undefined): number {
 }
 
 /**
- * 身份（在校生 / 应届 / 0~1年 / 1~3年）决定起点阶段。
- * 在校生与应届从 current 开始；0~1年从 year1；1~3年从 year2。
+ * 身份（在校生 / 应届 / 已有职场经历）决定起点阶段。
+ * 在校生与应届从 current 开始；已有职场经历的用户从 current 起步，
+ * 以"当前状态 + 未来 3 年"的视角推演。
  */
 function identityStartIndex(identity: UserProfile['identity']): number {
   switch (identity) {
     case 'student':
     case 'fresh':
-      return 0
-    case '0_1y':
-      return 1
-    case '1_3y':
-      return 2
+    case 'professional':
     default:
       return 0
   }
@@ -463,7 +473,7 @@ function buildRoute(raw: RawRoute, index: number, profile: UserProfile): CareerR
   const hash = hashString(profile.majorOrJob + raw.name + (profile.schoolTier || ''))
   const jitter = (hash % 100) / 100 // 0~0.99
 
-  // 根据身份决定起点：在校生/应届从 current 开始；0~1 年从 year1；1~3 年从 year2
+  // 根据身份决定起点：在校生 / 应届 / 已有职场经历，均从 current 开始
   const startIdx = identityStartIndex(profile.identity)
   const allStages = (['current', 'year1', 'year2', 'year3'] as const).map((stageKey) => {
     const s = raw.stages[stageKey]
@@ -559,23 +569,29 @@ function generateRoutes(input: UserProfile): CareerSandbox {
   const viableRelevant = relevant.filter((s) => s.score >= 25)
   const top = [...viableRelevant, ...irrelevant, ...relevant.filter((s) => s.score < 25)].slice(0, 4)
   top.sort((a, b) => b.score - a.score)
-  const routes = top.map((item, i) => buildRoute(item.raw, i, input))
+  const baseRoutes = top.map((item, i) => buildRoute(item.raw, i, input))
+
+  // 长周期深度推演：把 3 年期路线外推到 8 年（资深→专家→负责人→总监的连贯轨迹）
+  const deep = !!input.deepMode
+  const horizon = deep ? 8 : 3
+  const routes = deep ? baseRoutes.map((r) => extrapolateLongCycle(r, input)) : baseRoutes
 
   const identityText = {
     student: '在校生',
     fresh: '应届毕业生',
-    '0_1y': '0~1 年职场人',
-    '1_3y': '1~3 年职场人',
+    professional: '有职场规划需求的人',
   }[input.identity]
 
   const cityText = input.city
   const topIndustry = routes[0]?.industry || '通用'
   const topRoute = routes[0]
-  const salaryTop = topRoute?.salaryCurve[3].max ?? 0
+  const terminalCurve = topRoute?.salaryCurve[topRoute.salaryCurve.length - 1]
+  const salaryTop = terminalCurve?.max ?? 0
   const salaryStart = topRoute?.salaryCurve[0]
     ? Math.round((topRoute.salaryCurve[0].min + topRoute.salaryCurve[0].max) / 2)
     : 0
   const minSal = input.minSalaryK || 0
+  const yearText = deep ? '8 年' : '3 年'
 
   // 薪资诊断文案：根据期望薪资与推荐路线的实际可达区间动态生成
   let salaryNote = ''
@@ -583,9 +599,9 @@ function generateRoutes(input: UserProfile): CareerSandbox {
     if (salaryStart >= minSal) {
       salaryNote = `你期望的 ${minSal}K/月在首选路线起步阶段即可达到，`
     } else if (salaryTop >= minSal) {
-      salaryNote = `你期望的 ${minSal}K/月需要在首选路线上积累 1~3 年才能达到，`
+      salaryNote = `你期望的 ${minSal}K/月需要在首选路线上积累若干年才能达到，`
     } else {
-      salaryNote = `在${cityText}市场、你当前背景下，推荐路线 3 年内稳定达到 ${minSal}K/月有一定压力，建议同时考虑提升学历/技能或放宽城市，`
+      salaryNote = `在${cityText}市场、你当前背景下，推荐路线${yearText}内稳定达到 ${minSal}K/月有一定压力，建议同时考虑提升学历/技能或放宽城市，`
     }
   }
 
@@ -606,13 +622,14 @@ function generateRoutes(input: UserProfile): CareerSandbox {
   const summary =
     `作为一名${identityText}，你所在的${cityText}市场中，${topIndustry}方向与你的背景（${
       input.majorOrJob || '未填写专业'
-    }）匹配度最高，起步薪资约 ${salaryStart}K/月，3 年薪资上限约 ${salaryTop}K/月。` +
+    }）匹配度最高，起步薪资约 ${salaryStart}K/月，${yearText}薪资上限约 ${salaryTop}K/月。` +
+    (deep ? '本次为 8 年长周期深度推演，第 5~6 年是管理/专家分岔关键期。' : '') +
     salaryNote +
     (overtimeNote ? overtimeNote : '') +
     (relocateNote ? relocateNote : '') +
     '建议同时准备 2 条路线，避免单押。'
 
-  return { routes, summary }
+  return { routes, summary, horizon }
 }
 
 function generateGrowthPlan(input: { profile: UserProfile; route: CareerRoute }): GrowthPlan {
@@ -656,10 +673,14 @@ function generateGrowthPlan(input: { profile: UserProfile; route: CareerRoute })
 
 function compareRoutes(input: { routes: CareerRoute[]; profile: UserProfile }): CompareResult {
   const { routes, profile } = input
+  // 终点薪资：常规模式取 year3，长周期模式取路线最后一个阶段
+  const terminalMax = (r: CareerRoute) => r.salaryCurve[r.salaryCurve.length - 1]?.max ?? 0
+  const horizon = routes[0]?.salaryCurve ? routes[0].salaryCurve.length - 1 : 3
+  const yearLabel = horizon >= 5 ? `${horizon} 年` : '3 年'
   const comparison = routes.map((r) => ({
     routeId: r.id,
     entryCost: r.entryCost,
-    threeYearSalaryMax: r.salaryCurve[3].max,
+    threeYearSalaryMax: terminalMax(r),
     involution: Math.ceil(r.involutionScore / 2),
     switchDifficulty: r.switchDifficulty,
     ceiling: r.ceiling,
@@ -670,13 +691,13 @@ function compareRoutes(input: { routes: CareerRoute[]; profile: UserProfile }): 
   const sorted = [...routes].sort((a, b) => b.matchScore - a.matchScore)
   const stablePick = [...routes].sort((a, b) => a.riskLevel - b.riskLevel)[0]
   const salaryPick = [...routes].sort(
-    (a, b) => b.salaryCurve[3].max - a.salaryCurve[3].max
+    (a, b) => terminalMax(b) - terminalMax(a)
   )[0]
 
   const pref = profile.preferences
   let advice = ''
   if (pref.includes('高薪收入')) {
-    advice += `如果你最看重高薪：${salaryPick.name} 3 年薪资上限可达 ${salaryPick.salaryCurve[3].max}K，但其内卷评分 ${salaryPick.involutionScore}/10、风险 ${salaryPick.riskLevel}/5，需要承受相应压力。\n\n`
+    advice += `如果你最看重高薪：${salaryPick.name} ${yearLabel}薪资上限可达 ${terminalMax(salaryPick)}K，但其内卷评分 ${salaryPick.involutionScore}/10、风险 ${salaryPick.riskLevel}/5，需要承受相应压力。\n\n`
   }
   if (
     pref.includes('工作稳定') ||
@@ -696,6 +717,52 @@ function compareRoutes(input: { routes: CareerRoute[]; profile: UserProfile }): 
     '风险提示：以上建议基于市场公开 JD 数据与你的输入生成，城市、行业周期、个人能力与运气都会显著影响实际结果。建议结合兴趣、身体状况与家庭情况综合决策，不要单凭数据选择职业。'
 
   return { comparison, advice }
+}
+
+/**
+ * 本地确定性薪资锚点：供 Agent 的 salary_benchmark 工具调用。
+ * 基于内置 RAW_ROUTES 数据集（参考 2024–2025 年脉脉/猎聘/BOSS 薪酬报告估算）
+ * × 城市薪资系数，给出岗位在指定城市的起薪/1 年/3 年薪资区间，
+ * 作为模型薪资断言的「本地事实锚」，与实时搜索结果交叉对照。
+ */
+export function localSalaryBenchmark(city: string, jobKeyword: string) {
+  const factor = cityFactor(city || '')
+  const kw = (jobKeyword || '').trim()
+  const scored = RAW_ROUTES.map((raw) => {
+    let hit = 0
+    if (kw) {
+      for (const k of raw.keywords) if (keywordMatches(kw, k)) hit++
+      if (textMatches(kw, raw.name)) hit += 2
+      if (textMatches(kw, raw.industry)) hit++
+    }
+    return { raw, hit }
+  })
+    .filter((x) => x.hit > 0)
+    .sort((a, b) => b.hit - a.hit)
+    .slice(0, 3)
+
+  const matches = scored.map(({ raw }) => {
+    const scale = (s: [number, number]): [number, number] => [
+      Math.round(s[0] * factor),
+      Math.round(s[1] * factor),
+    ]
+    return {
+      track: raw.name,
+      industry: raw.industry,
+      city: city || '未指定（按全国基准 0.7 系数）',
+      cityFactor: Number(factor.toFixed(2)),
+      startSalaryK: scale(raw.stages.current.salary),
+      year1SalaryK: scale(raw.stages.year1.salary),
+      year3SalaryK: scale(raw.stages.year3.salary),
+      note: '本地内置数据集参考值（非实时数据），需与实时搜索结果交叉验证',
+    }
+  })
+
+  return {
+    queried: { city: city || '', jobKeyword: kw },
+    matched: matches.length,
+    matches,
+  }
 }
 
 export const localAdapter: CareerAdapter = {
@@ -718,6 +785,22 @@ export const localAdapter: CareerAdapter = {
   }): Promise<CompareResult> {
     await new Promise((r) => setTimeout(r, 500))
     return compareRoutes(input)
+  },
+  async parseResume(): Promise<ResumeParseResult> {
+    // 本地模式没有视觉模型，无法识别图片；明确引导用户切换在线 AI 模式
+    throw new Error(
+      '简历图片视觉解析需要在线 AI 模式（本地模拟器无法识别图片）。请在右上角切换到「在线 AI 推演」，并确认后端配置了视觉模型（如 doubao-vision / qwen-vl）。'
+    )
+  },
+  async runMarketResearch(
+    input: ResearchInput,
+    onStep?: (step: ResearchStepState) => void
+  ): Promise<MarketResearchReport> {
+    return localRunMarketResearch(input, onStep)
+  },
+  async validateSandbox(input: ValidationInput): Promise<SandboxValidation> {
+    await new Promise((r) => setTimeout(r, 400))
+    return localValidateSandbox(input)
   },
 }
 

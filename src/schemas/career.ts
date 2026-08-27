@@ -54,6 +54,32 @@ function fixedLength<T extends z.ZodTypeAny>(
   }, z.array(schema).length(len))
 }
 
+/**
+ * 变长数组容错：长度允许 [minLen, maxLen]。
+ * 不足 minLen 时按 padFn 补齐（长周期推演下 AI 漏返 yearN 节点时兜底），
+ * 超过 maxLen 截断。常规 3 年期为 4 节点（current+year1~3），
+ * 长周期深度推演最长 9 节点（current+year1~8）。
+ */
+function variableLength<T extends z.ZodTypeAny>(
+  schema: T,
+  minLen: number,
+  maxLen: number,
+  padFn: (idx: number) => z.infer<T>
+) {
+  return z.preprocess((v) => {
+    if (!Array.isArray(v)) {
+      return Array.from({ length: minLen }, (_, i) => padFn(i))
+    }
+    if (v.length < minLen) {
+      const padded = [...v]
+      for (let i = v.length; i < minLen; i++) padded.push(padFn(i))
+      return padded
+    }
+    if (v.length > maxLen) return v.slice(0, maxLen)
+    return v
+  }, z.array(schema).min(minLen).max(maxLen))
+}
+
 /** 薪资二元组容错：[a,b,c] → [a,b]，[a] → [a,a]，非数组 → [0,0] */
 function salaryTuple() {
   return z.preprocess((v) => {
@@ -64,9 +90,12 @@ function salaryTuple() {
   }, z.tuple([num(), num()]))
 }
 
-const STAGES = ['current', 'year1', 'year2', 'year3'] as const
+const STAGES = [
+  'current', 'year1', 'year2', 'year3',
+  'year4', 'year5', 'year6', 'year7', 'year8',
+] as const
 const defaultNode = (i: number) => ({
-  stage: STAGES[i],
+  stage: STAGES[Math.min(i, STAGES.length - 1)],
   title: '',
   salaryRange: [0, 0] as [number, number],
   demandLevel: 3,
@@ -74,7 +103,11 @@ const defaultNode = (i: number) => ({
   requiredSkills: [],
   certificates: [],
 })
-const defaultSalaryPoint = (i: number) => ({ stage: STAGES[i], min: 0, max: 0 })
+const defaultSalaryPoint = (i: number) => ({
+  stage: STAGES[Math.min(i, STAGES.length - 1)],
+  min: 0,
+  max: 0,
+})
 const defaultMonth = (i: number) => ({
   month: i + 1,
   theme: '',
@@ -85,7 +118,10 @@ const defaultMonth = (i: number) => ({
   keyReminder: '',
 })
 
-export const stageSchema = z.enum(['current', 'year1', 'year2', 'year3'])
+export const stageSchema = z.enum([
+  'current', 'year1', 'year2', 'year3',
+  'year4', 'year5', 'year6', 'year7', 'year8',
+])
 export const involutionSchema = looseEnum(['low', 'medium', 'high'] as const, 'medium')
 
 export const routeNodeSchema = z.object({
@@ -112,8 +148,8 @@ export const careerRouteSchema = z.object({
   involutionLevel: involutionSchema,
   involutionScore: num({ min: 1, max: 10, default: 5 }),
   matchScore: num({ min: 0, max: 100, default: 50 }),
-  nodes: fixedLength(routeNodeSchema, 4, defaultNode),
-  salaryCurve: fixedLength(salaryPointSchema, 4, defaultSalaryPoint),
+  nodes: variableLength(routeNodeSchema, 4, 9, defaultNode),
+  salaryCurve: variableLength(salaryPointSchema, 4, 9, defaultSalaryPoint),
   pitfalls: z.array(z.string()).default([]),
   entryCost: num({ min: 1, max: 5, default: 3 }),
   switchDifficulty: num({ min: 1, max: 5, default: 3 }),
@@ -124,6 +160,7 @@ export const careerRouteSchema = z.object({
 export const sandboxSchema = z.object({
   routes: z.array(careerRouteSchema).min(1),
   summary: z.string().default(''),
+  horizon: num({ min: 3, max: 8, default: 3 }).optional(),
 })
 
 export const learningTaskSchema = z.object({

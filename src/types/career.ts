@@ -3,13 +3,22 @@
 
 export type AppMode = 'ai' | 'local'
 
-export type Identity = 'student' | 'fresh' | '0_1y' | '1_3y'
+export type Identity = 'student' | 'fresh' | 'professional'
 
 export type RiskPreference = 'conservative' | 'neutral' | 'aggressive'
 
 export type InvolutionLevel = 'low' | 'medium' | 'high'
 
-export type Stage = 'current' | 'year1' | 'year2' | 'year3'
+export type Stage =
+  | 'current'
+  | 'year1'
+  | 'year2'
+  | 'year3'
+  | 'year4'
+  | 'year5'
+  | 'year6'
+  | 'year7'
+  | 'year8'
 
 export type RelocateChoice = boolean | 'tier1' | 'new_tier1'
 
@@ -37,6 +46,10 @@ export interface UserProfile {
   minSalaryK: number
   riskPreference: RiskPreference
   skills: string[]
+  /** 长周期深度推演：false=3 年期；true=5~8 年超长周期连贯路线 */
+  deepMode?: boolean
+  /** 简历视觉解析结果（上传简历后自动填充） */
+  resume?: import('./research').ResumeParseResult | null
 }
 
 export interface RouteNode {
@@ -77,6 +90,12 @@ export interface CareerSandbox {
   summary: string
   generatedAt?: string
   mode?: AppMode
+  /** 推演年限：3 = 常规 3 年期；5~8 = 长周期深度推演 */
+  horizon?: number
+  /** 推演后自动执行的链式市场调研报告 */
+  research?: import('./research').MarketResearchReport | null
+  /** 沙盘事实校验 / 自洽性检查结果 */
+  validation?: import('./research').SandboxValidation | null
 }
 
 export interface LearningTask {
@@ -140,4 +159,18 @@ export interface CareerAdapter {
     profile: UserProfile
     routes: CareerRoute[]
   }): Promise<CompareResult>
+  /** 简历图片视觉解析：识别学历、技能、工作/项目经历、短板并回填画像参数 */
+  parseResume(input: {
+    imageDataUrl: string
+    fileName?: string
+  }): Promise<import('./research').ResumeParseResult>
+  /** Agent 链式深度市场调研（任务拆解 → JD → 招聘动态 → 热度 → 舆情 → 风险 → 汇总） */
+  runMarketResearch(
+    input: import('./research').ResearchInput,
+    onStep?: (step: import('./research').ResearchStepState) => void
+  ): Promise<import('./research').MarketResearchReport>
+  /** 对整套沙盘做事实校验、交叉比对与自洽性检查 */
+  validateSandbox(
+    input: import('./research').ValidationInput
+  ): Promise<import('./research').SandboxValidation>
 }

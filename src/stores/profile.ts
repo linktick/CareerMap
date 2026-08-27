@@ -17,6 +17,8 @@ const defaultProfile: UserProfile = {
   minSalaryK: 8,
   riskPreference: 'neutral',
   skills: [],
+  deepMode: false,
+  resume: null,
 }
 
 export const useProfileStore = defineStore('profile', () => {

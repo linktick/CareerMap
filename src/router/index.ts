@@ -26,6 +26,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '示例沙盘' },
   },
   {
+    path: '/intel',
+    name: 'intel',
+    component: () => import('@/views/IntelView.vue'),
+    meta: { title: '职业动态' },
+  },
+  {
     path: '/compare',
     name: 'compare',
     component: () => import('@/views/CompareView.vue'),

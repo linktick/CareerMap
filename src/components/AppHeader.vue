@@ -6,7 +6,7 @@ import {
   NSpace, NIcon, NSelect, useMessage,
 } from 'naive-ui'
 import {
-  SettingsOutline, HomeOutline, GridOutline, GitCompareOutline, TimeOutline,
+  SettingsOutline, HomeOutline, GridOutline, GitCompareOutline, TimeOutline, PulseOutline,
 } from '@vicons/ionicons5'
 import { useModeStore } from '@/stores/mode'
 import { useSandboxStore } from '@/stores/sandbox'
@@ -36,6 +36,7 @@ const presetOptions = [
 const navItems = [
   { name: 'home', label: '首页', path: '/', icon: HomeOutline },
   { name: 'sandbox', label: '沙盘', path: '/sandbox', icon: GridOutline },
+  { name: 'intel', label: '动态', path: '/intel', icon: PulseOutline },
   { name: 'compare', label: '对比', path: '/compare', icon: GitCompareOutline },
   { name: 'history', label: '历史记录', path: '/history', icon: TimeOutline },
 ]

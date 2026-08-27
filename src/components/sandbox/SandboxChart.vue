@@ -21,6 +21,11 @@ const STAGE_LABEL: Record<string, string> = {
   year1: '第 1 年',
   year2: '第 2 年',
   year3: '第 3 年',
+  year4: '第 4 年',
+  year5: '第 5 年',
+  year6: '第 6 年',
+  year7: '第 7 年',
+  year8: '第 8 年',
 }
 
 const selectedRoute = computed(() =>
@@ -34,6 +39,9 @@ const stageLabels = computed<string[]>(() => {
   if (!first) return ['现在', '第 1 年', '第 2 年', '第 3 年']
   return first.nodes.map((n) => STAGE_LABEL[n.stage] || n.stage)
 })
+
+// 长周期（8 年）下类目轴更密，收窄字号与边距避免拥挤
+const isLongCycle = computed(() => (props.routes[0]?.nodes.length || 4) > 5)
 
 function renderChart() {
   if (!chart) return
@@ -90,7 +98,9 @@ function renderChart() {
 
   const option: any = {
     backgroundColor: 'transparent',
-    grid: { left: 70, right: 60, top: 50, bottom: 60 },
+    grid: isLongCycle.value
+      ? { left: 60, right: 40, top: 50, bottom: 60 }
+      : { left: 70, right: 60, top: 50, bottom: 60 },
     legend: {
       show: props.routes.length > 0,
       top: 8,
@@ -133,7 +143,12 @@ function renderChart() {
       position: 'bottom',
       axisLine: { lineStyle: { color: '#d1d5db' } },
       axisTick: { show: false },
-      axisLabel: { color: '#6b7280', fontSize: 13, fontWeight: 500 },
+      axisLabel: {
+        color: '#6b7280',
+        fontSize: isLongCycle.value ? 11 : 13,
+        fontWeight: 500,
+        interval: 0,
+      },
       boundaryGap: false,
     },
     yAxis: {

@@ -13,8 +13,12 @@ import { exportReportPDF, exportReportHTML } from '@/utils/exporter'
 import { CHINA_CITY_OPTIONS } from '@/utils/chinaCities'
 import SandboxChart from '@/components/sandbox/SandboxChart.vue'
 import RouteDetailPanel from '@/components/sandbox/RouteDetailPanel.vue'
+import ResearchDrawer from '@/components/sandbox/ResearchDrawer.vue'
 import { involutionColor, involutionText } from '@/utils/format'
 import type { UserProfile } from '@/types/career'
+
+const researchDrawer = ref(false)
+const horizon = computed(() => sandbox.sandbox?.horizon ?? 3)
 
 const router = useRouter()
 const sandbox = useSandboxStore()
@@ -255,7 +259,7 @@ function switchToLocalAndRetry() {
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium text-gray-900 truncate">{{ r.name }}</div>
                 <div class="text-xs text-gray-500 mt-0.5">
-                  3Y {{ r.salaryCurve[3].min }}-{{ r.salaryCurve[3].max }}K
+                  {{ horizon }}Y {{ r.salaryCurve[r.salaryCurve.length - 1].min }}-{{ r.salaryCurve[r.salaryCurve.length - 1].max }}K
                   · 匹配 {{ r.matchScore }}
                 </div>
               </div>
@@ -292,8 +296,70 @@ function switchToLocalAndRetry() {
           :selected-id="sandbox.selectedRouteId"
           @select="selectRoute"
         />
+        <!-- 链式市场调研进度卡（推演完成后自动执行） -->
+        <div
+          v-if="sandbox.researchState === 'running' || sandbox.validationState === 'running'"
+          class="absolute bottom-5 left-5 z-10 w-72 bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 shadow-lg border border-blue-100"
+        >
+          <div class="flex items-center gap-2 mb-2">
+            <NSpin size="small" />
+            <span class="text-xs font-bold text-blue-700">
+              {{ sandbox.researchState === 'running' ? 'Agent 链式市场调研中…' : '事实校验与自洽性检查中…' }}
+            </span>
+          </div>
+          <div class="space-y-1">
+            <div
+              v-for="step in sandbox.researchSteps"
+              :key="step.id"
+              class="flex items-center gap-1.5 text-[11px]"
+            >
+              <span class="w-3 text-center">
+                <span v-if="step.status === 'done'" class="text-green-600">✓</span>
+                <span v-else-if="step.status === 'running'" class="text-blue-500 animate-pulse">●</span>
+                <span v-else-if="step.status === 'error'" class="text-amber-500">⚠</span>
+                <span v-else class="text-gray-300">○</span>
+              </span>
+              <span :class="step.status === 'pending' ? 'text-gray-400' : 'text-gray-600'">{{ step.title }}</span>
+            </div>
+          </div>
+          <div class="text-[10px] text-gray-400 mt-2">调研在后台进行，可先浏览沙盘，完成后自动出报告</div>
+        </div>
+
+        <!-- 调研完成/失败的提示入口 -->
+        <div
+          v-if="sandbox.researchState === 'done'"
+          class="absolute top-4 right-4 z-10"
+        >
+          <NButton
+            size="small"
+            type="primary"
+            secondary
+            class="!shadow-md"
+            @click="researchDrawer = true"
+          >
+            🔍 {{ sandbox.validation?.confidenceScore != null ? `校验报告 · 置信度 ${sandbox.validation.confidenceScore}` : '调研报告已生成' }}
+          </NButton>
+        </div>
+        <div
+          v-if="sandbox.researchState === 'error'"
+          class="absolute top-4 right-4 z-10"
+        >
+          <NButton size="small" type="warning" secondary class="!shadow-md" @click="sandbox.runResearchAndValidation()">
+            ⚠ 市场调研失败，点击重试
+          </NButton>
+        </div>
+
         <!-- Floating action buttons -->
         <div class="absolute bottom-5 right-5 flex flex-col gap-2 no-print">
+          <NButton
+            size="medium"
+            class="!shadow-md"
+            :type="sandbox.researchState === 'done' ? 'primary' : 'default'"
+            :loading="sandbox.researchState === 'running'"
+            @click="researchDrawer = true"
+          >
+            {{ sandbox.researchState === 'running' ? '⏳ 调研进行中…' : '🔍 市场调研与校验' }}
+          </NButton>
           <NButton type="primary" size="medium" class="!shadow-lg !shadow-blue-500/25" @click="goCompare">
             🔀 对比路线 ({{ sandbox.compareRouteIds.length }})
           </NButton>
@@ -301,6 +367,17 @@ function switchToLocalAndRetry() {
           <NButton size="medium" class="!shadow-md" @click="exportPDF">📄 导出 PDF</NButton>
           <NButton size="medium" class="!shadow-md" @click="exportHTML">🌐 导出 HTML</NButton>
         </div>
+
+        <ResearchDrawer
+          v-model:show="researchDrawer"
+          :report="sandbox.researchReport"
+          :validation="sandbox.validation"
+          :steps="sandbox.researchSteps"
+          :research-state="sandbox.researchState"
+          :validation-state="sandbox.validationState"
+          :research-error="sandbox.researchError"
+          @rerun="sandbox.runResearchAndValidation()"
+        />
       </section>
 
       <!-- Right panel -->

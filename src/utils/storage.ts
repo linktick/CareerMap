@@ -1,10 +1,36 @@
 import type { HistoryRecord, UserProfile } from '@/types/career'
+import type { IntelSettings, IntelSnapshot, CycleDays } from '@/types/intel'
 
 const HISTORY_KEY = 'careermap:history'
 const PROFILE_DRAFT_KEY = 'careermap:profile:draft'
 const AI_CONFIG_KEY = 'careermap:ai-config'
 const GROWTH_DONE_KEY = 'careermap:growth:done'
+const INTEL_SETTINGS_KEY = 'careermap:intel:settings'
+const INTEL_SNAPSHOTS_KEY = 'careermap:intel:snapshots'
 const MAX_HISTORY = 50
+const MAX_INTEL_SNAPSHOTS = 20
+
+/** 默认监控赛道：风口 / 收缩 / 蓝海各取代表，开箱即有三类热力标签可看 */
+export const DEFAULT_MONITORED = [
+  'ai-application',
+  'new-energy',
+  'smart-driving',
+  'semiconductor',
+  'cross-border-ecom',
+  'robotics',
+  'frontend',
+  'real-estate',
+  'silver-economy',
+  'healthcare',
+  'data-analysis',
+]
+
+export const defaultIntelSettings: IntelSettings = {
+  cycleDays: 7 as CycleDays,
+  monitored: [...DEFAULT_MONITORED],
+  autoRefresh: true,
+  customIndustries: [],
+}
 
 export function loadHistory(): HistoryRecord[] {
   try {
@@ -101,4 +127,53 @@ export function loadGrowthDone(routeId: string): Record<number, string[]> {
 
 export function saveGrowthDone(routeId: string, data: Record<number, string[]>) {
   localStorage.setItem(`${GROWTH_DONE_KEY}:${routeId}`, JSON.stringify(data))
+}
+
+// ============ 职业动态模块 ============
+
+export function loadIntelSettings(): IntelSettings {
+  try {
+    const raw = localStorage.getItem(INTEL_SETTINGS_KEY)
+    if (!raw) return { ...defaultIntelSettings, monitored: [...defaultIntelSettings.monitored] }
+    const parsed = JSON.parse(raw)
+    const cycle = [1, 3, 7, 14].includes(Number(parsed.cycleDays))
+      ? (Number(parsed.cycleDays) as CycleDays)
+      : 7
+    return {
+      cycleDays: cycle,
+      monitored: Array.isArray(parsed.monitored) ? parsed.monitored.map(String) : [...DEFAULT_MONITORED],
+      autoRefresh: parsed.autoRefresh !== false,
+      customIndustries: Array.isArray(parsed.customIndustries) ? parsed.customIndustries : [],
+    }
+  } catch {
+    return { ...defaultIntelSettings, monitored: [...defaultIntelSettings.monitored] }
+  }
+}
+
+export function saveIntelSettings(s: IntelSettings) {
+  try {
+    localStorage.setItem(INTEL_SETTINGS_KEY, JSON.stringify(s))
+  } catch (e) {
+    console.warn('保存情报设置失败', e)
+  }
+}
+
+export function loadIntelSnapshots(): IntelSnapshot[] {
+  try {
+    const raw = localStorage.getItem(INTEL_SNAPSHOTS_KEY)
+    if (!raw) return []
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
+}
+
+export function saveIntelSnapshots(snapshots: IntelSnapshot[]) {
+  try {
+    const trimmed = snapshots.slice(-MAX_INTEL_SNAPSHOTS)
+    localStorage.setItem(INTEL_SNAPSHOTS_KEY, JSON.stringify(trimmed))
+  } catch (e) {
+    console.warn('保存情报快照失败（localStorage 可能已满）', e)
+  }
 }

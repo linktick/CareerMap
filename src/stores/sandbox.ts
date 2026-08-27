@@ -7,12 +7,18 @@ import type {
   UserProfile,
   CompareResult,
 } from '@/types/career'
+import type {
+  MarketResearchReport,
+  ResearchStepState,
+  SandboxValidation,
+} from '@/types/research'
 import { useModeStore } from './mode'
 import { useProfileStore } from './profile'
 import { useHistoryStore } from './history'
 import { __localInternals } from '@/adapters/local'
 
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
+export type ResearchState = 'idle' | 'running' | 'done' | 'error'
 
 export const useSandboxStore = defineStore('sandbox', () => {
   const modeStore = useModeStore()
@@ -32,6 +38,14 @@ export const useSandboxStore = defineStore('sandbox', () => {
   // 本地模式下在沙盘页直接调整画像参数时的即时重算状态
   const dynamicUpdating = ref(false)
 
+  // ===== 链式市场调研 + 事实校验（推演完成后自动执行）=====
+  const researchState = ref<ResearchState>('idle')
+  const researchSteps = ref<ResearchStepState[]>([])
+  const researchReport = ref<MarketResearchReport | null>(null)
+  const researchError = ref('')
+  const validationState = ref<ResearchState>('idle')
+  const validation = ref<SandboxValidation | null>(null)
+
   const routes = computed<CareerRoute[]>(() => sandbox.value?.routes || [])
   const selectedRoute = computed<CareerRoute | null>(
     () => routes.value.find((r) => r.id === selectedRouteId.value) || routes.value[0] || null
@@ -47,6 +61,68 @@ export const useSandboxStore = defineStore('sandbox', () => {
     growthError.value = ''
     compareResult.value = null
     currentHistoryId.value = null
+    researchState.value = 'idle'
+    researchSteps.value = []
+    researchReport.value = null
+    researchError.value = ''
+    validationState.value = 'idle'
+    validation.value = null
+  }
+
+  /**
+   * 推演完成后自动执行：Agent 链式深度市场调研 → 沙盘事实校验。
+   * 调研链路逐步骤回调进度；任一步骤失败由适配器内部兜底，
+   * 整条链失败时 researchState 置 error（不影响已生成的沙盘）。
+   */
+  async function runResearchAndValidation() {
+    if (!sandbox.value) return
+    researchState.value = 'running'
+    researchError.value = ''
+    validationState.value = 'idle'
+    validation.value = null
+    researchSteps.value = []
+    try {
+      const report = await modeStore.adapter.runMarketResearch(
+        {
+          profile: profileStore.profile,
+          sandbox: {
+            routes: sandbox.value.routes,
+            summary: sandbox.value.summary,
+            horizon: sandbox.value.horizon ?? 3,
+          },
+        },
+        (step) => {
+          const idx = researchSteps.value.findIndex((s) => s.id === step.id)
+          if (idx === -1) researchSteps.value.push(step)
+          else researchSteps.value[idx] = step
+        }
+      )
+      researchReport.value = report
+      researchState.value = 'done'
+      if (sandbox.value) sandbox.value.research = report
+
+      // 调研完成后紧接事实校验
+      validationState.value = 'running'
+      try {
+        const result = await modeStore.adapter.validateSandbox({
+          profile: profileStore.profile,
+          sandbox: {
+            routes: sandbox.value.routes,
+            summary: sandbox.value.summary,
+            horizon: sandbox.value.horizon ?? 3,
+          },
+          research: report,
+        })
+        validation.value = result
+        validationState.value = 'done'
+        if (sandbox.value) sandbox.value.validation = result
+      } catch (e: any) {
+        validationState.value = 'error'
+      }
+    } catch (e: any) {
+      researchError.value = e?.message || '市场调研失败'
+      researchState.value = 'error'
+    }
   }
 
   async function generateRoutes() {
@@ -56,7 +132,7 @@ export const useSandboxStore = defineStore('sandbox', () => {
     const steps = isAI
       ? [
           '正在连接 AI 推理引擎...',
-          'AI 深度分析你的背景与偏好（推理模型可能需要 1~3 分钟，请耐心等待）...',
+          'AI 深度分析你的背景与偏好（推理模型耗时较长，最长可能等待 20 分钟，请耐心等待）...',
           'AI 正在推演多条职业分支与薪资走势...',
           '仍在思考中，模型正在权衡不同赛道的 trade-off...',
           '测算内卷风险、晋升瓶颈与转行难度...',
@@ -65,7 +141,7 @@ export const useSandboxStore = defineStore('sandbox', () => {
       : [
           '分析你的背景与偏好...',
           '正在通过本地岗位数据库生成职业分支...',
-          '测算 3 年薪资与内卷风险...',
+          profileStore.profile.deepMode ? '外推 8 年长周期薪资走势与内卷风险...' : '测算 3 年薪资与内卷风险...',
           '渲染沙盘图谱...',
         ]
     let i = 0
@@ -93,6 +169,8 @@ export const useSandboxStore = defineStore('sandbox', () => {
         modeStore.mode
       )
       profileStore.clearDraft()
+      // 推演完成后自动执行 Agent 链式市场调研 + 事实校验（后台运行，不阻塞沙盘浏览）
+      void runResearchAndValidation()
     } catch (e: any) {
       errorMessage.value = e?.message || '推演失败'
       loadingState.value = 'error'
@@ -154,6 +232,12 @@ export const useSandboxStore = defineStore('sandbox', () => {
     compareRouteIds.value = data.routes.slice(0, 3).map((r) => r.id)
     loadingState.value = 'success'
     currentHistoryId.value = historyId
+    // 历史记录中已附带调研/校验结果时直接恢复，不重复执行
+    researchReport.value = data.research || null
+    researchState.value = data.research ? 'done' : 'idle'
+    researchSteps.value = data.research?.stepStatus || []
+    validation.value = data.validation || null
+    validationState.value = data.validation ? 'done' : 'idle'
   }
 
   /**
@@ -179,8 +263,15 @@ export const useSandboxStore = defineStore('sandbox', () => {
         ? selectedRouteId.value
         : result.routes[0]?.id || null
       compareRouteIds.value = result.routes.slice(0, 3).map((r) => r.id)
-      // 参数变化后旧的成长方案不再对应当前画像，清空以免误导
+      // 参数变化后旧的成长方案/调研结论不再对应当前画像，清空以免误导
       growthPlan.value = null
+      researchReport.value = null
+      researchSteps.value = []
+      researchState.value = 'idle'
+      validation.value = null
+      validationState.value = 'idle'
+      result.research = null
+      result.validation = null
       loadingState.value = 'success'
     } finally {
       dynamicUpdating.value = false
@@ -199,6 +290,12 @@ export const useSandboxStore = defineStore('sandbox', () => {
     growthError,
     compareResult,
     dynamicUpdating,
+    researchState,
+    researchSteps,
+    researchReport,
+    researchError,
+    validationState,
+    validation,
     routes,
     selectedRoute,
     reset,
@@ -207,6 +304,7 @@ export const useSandboxStore = defineStore('sandbox', () => {
     toggleCompare,
     generateGrowthPlan,
     runCompare,
+    runResearchAndValidation,
     loadFromHistory,
     refreshLocalProfile,
   }
