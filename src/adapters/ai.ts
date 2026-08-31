@@ -25,6 +25,7 @@ import {
 } from './aiAgent'
 import { ensureLongCycle } from './local/research'
 import { localSalaryBenchmark } from './local'
+import { aiRouteRelevant, clampRouteToBenchmark, isExamPrepRoute, relevantYears } from './local/benchmark'
 import type { WebSearchResult } from '@/types/research'
 
 /** 端点不支持 function calling（tools 参数被拒绝），Agent loop 据此回退固定链路 */
@@ -446,16 +447,23 @@ export class AIAdapter implements CareerAdapter {
   async generateRoutes(input: UserProfile): Promise<CareerSandbox> {
     const result = await this.callWithSchema(buildRoutesPrompt(input), sandboxSchema)
 
-    // 逐路线归一化：salaryCurve 与 nodes 对齐（模型漏返曲线点时用节点薪资补齐）
+    // 基准约束层：模型返回的薪资/分数先经内置写实基准库钳制（资历段 × 城市系数 ×
+    // 学历系数 × P7 硬天花板），修倒挂、修离谱值；salaryCurve 一律以钳制后的 nodes
+    // 为准重建，保证曲线与节点一致且全部落在市场合理区间内。
     result.routes = result.routes.map((r) => {
-      if (r.salaryCurve.length !== r.nodes.length) {
-        r.salaryCurve = r.nodes.map((n, i) => {
-          const existing = r.salaryCurve[i]
-          return existing && existing.stage === n.stage
-            ? existing
-            : { stage: n.stage, min: n.salaryRange[0], max: n.salaryRange[1] }
-        })
-      }
+      const relevant = aiRouteRelevant(r.name, r.industry, input)
+      // 体制内备考路线（公务员/事业编/教师编）：往届工龄不抵职级，
+      // current 必须是备考期，year1 才是试用期，不能按职场经验跳到科员/骨干教师
+      const startExp = isExamPrepRoute(r.name || '', r.industry || '')
+        ? 0
+        : relevantYears(input, relevant)
+      const notes = clampRouteToBenchmark(r, input, startExp)
+      if (notes.length) console.warn('[CareerMap] AI 路线数值经基准库钳制：\n' + notes.join('\n'))
+      r.salaryCurve = r.nodes.map((n) => ({
+        stage: n.stage,
+        min: n.salaryRange[0],
+        max: n.salaryRange[1],
+      }))
       return r
     })
 

@@ -56,18 +56,28 @@ function renderChart() {
   ) * 10 + 10
   const yAxisMin = 0
 
+  // 选中路线在当前（筛选后的）列表中时：高亮选中行业、压暗未选行业；
+  // 选中路线被筛选掉时整图不压暗，避免所有折线都发灰
+  const activeId = props.routes.some((r) => r.id === props.selectedId)
+    ? props.selectedId
+    : null
+
   // 每条路线一条连线。x 轴是类目轴，data 按节点顺序传薪资本均值即可，
   // ECharts 会自动把第 i 个点落到第 i 个类目下。
   props.routes.forEach((route) => {
     const color = involutionColor(route.involutionLevel)
-    const isSelected = route.id === props.selectedId
-    const points = route.nodes.map((node, idx) => {
+    const isSelected = route.id === activeId
+    const dimmed = activeId !== null && !isSelected
+    const lineOpacity = isSelected ? 1 : dimmed ? 0.15 : 1
+    const pointOpacity = isSelected ? 1 : dimmed ? 0.25 : 1
+    const symbolSize = isSelected ? 18 : dimmed ? 9 : 12
+    const points = route.nodes.map((node) => {
       const y = Math.round((node.salaryRange[0] + node.salaryRange[1]) / 2)
       return {
         // 类目轴下直接传数值，按索引对应到 stageLabels
         value: y,
-        symbolSize: isSelected ? 18 : 12,
-        itemStyle: { color },
+        symbolSize,
+        itemStyle: { color, opacity: pointOpacity },
         label: {
           show: isSelected,
           position: 'top',
@@ -76,7 +86,8 @@ function renderChart() {
           fontSize: 12,
           fontWeight: 600,
         },
-        emphasis: { focus: 'series' },
+        // 悬停压暗线时恢复全亮，保证可读性
+        emphasis: { focus: 'series', itemStyle: { opacity: 1 } },
       }
     })
 
@@ -87,11 +98,15 @@ function renderChart() {
       data: points,
       smooth: false,
       symbol: 'circle',
-      symbolSize: isSelected ? 18 : 12,
-      lineStyle: { width: isSelected ? 4 : 2, opacity: isSelected ? 1 : 0.5, color },
-      itemStyle: { color },
+      symbolSize,
+      lineStyle: { width: isSelected ? 4 : 2, opacity: lineOpacity, color },
+      itemStyle: { color, opacity: pointOpacity },
       label: { show: false },
-      emphasis: { focus: 'series' },
+      emphasis: {
+        focus: 'series',
+        lineStyle: { opacity: 1, width: isSelected ? 4 : 3 },
+        itemStyle: { opacity: 1 },
+      },
       z: isSelected ? 10 : 2,
     } as any)
   })
@@ -106,7 +121,22 @@ function renderChart() {
       top: 8,
       type: 'scroll',
       textStyle: { color: '#4b5563', fontSize: 12 },
-      data: props.routes.map((r) => r.name),
+      inactiveColor: '#d1d5db',
+      // 图例与折线同步：选中行业高亮加粗，未选行业变灰
+      data: props.routes.map((r) => {
+        const isSelected = r.id === activeId
+        const dimmed = activeId !== null && !isSelected
+        const c = involutionColor(r.involutionLevel)
+        return {
+          name: r.name,
+          textStyle: {
+            color: isSelected ? '#1f2937' : dimmed ? '#c7cdd8' : '#4b5563',
+            fontWeight: isSelected ? 600 : 400,
+          },
+          itemStyle: { color: dimmed ? `${c}40` : c },
+          lineStyle: { color: dimmed ? `${c}40` : c, width: isSelected ? 4 : 2 },
+        }
+      }),
     },
     tooltip: {
       trigger: 'item',

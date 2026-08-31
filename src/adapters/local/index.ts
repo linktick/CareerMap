@@ -8,13 +8,28 @@ import type {
   UserProfile,
 } from '@/types/career'
 import { RAW_ROUTES, type RawRoute } from './dataset'
-import { findTemplate } from './growthTemplates'
+import { findTemplate, buildAdvancedTailMonths } from './growthTemplates'
 import { levelToInvolution } from '@/utils/format'
 import {
-  extrapolateLongCycle,
   localRunMarketResearch,
   localValidateSandbox,
 } from './research'
+import {
+  aiRouteRelevant,
+  BAND_ENTRY_YEARS,
+  bandAtYears,
+  bottleneckFor,
+  cityBandFactor,
+  cityBandFactorMid,
+  cityFactor,
+  experienceYears,
+  isExamPrepRoute,
+  relevantYears,
+  riskForRoute,
+  salaryCurveFor,
+  schoolTierFactors,
+  seniorBandFor,
+} from './benchmark'
 import type {
   MarketResearchReport,
   ResearchInput,
@@ -24,101 +39,8 @@ import type {
   ValidationInput,
 } from '@/types/research'
 
-// 简单确定性字符串 hash，用来产生稳定的扰动
-function hashString(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i)
-    h |= 0
-  }
-  return Math.abs(h)
-}
-
-/**
- * 城市薪资系数表（以新一线 = 1.0 为锚点，与 dataset.ts 的基础薪资区间对齐）。
- * 数据依据：2024–2025 年各大招聘平台（脉脉/猎聘/BOSS）城镇职工平均工资及互联网/
- * 金融/制造业岗位薪酬报告，结合生活成本与岗位密度综合估算。数据集里的基础薪资
- * （如初级前端 10–16K）大致对应成都/武汉的市场水平，故新一线取 1.0。
- *
- * 分层说明：
- * - 港澳：香港整体薪酬显著高于内地，澳门博彩/文旅外的岗位溢价小于香港
- * - 北京/上海/深圳：互联网、金融、硬科技总部集中，明显高于广州
- * - 广州：传统商贸+部分互联网，整体略低于北上深
- * - 杭州（互联网）、苏州（制造业/外资）：高于普通新一线
- * - 新一线：成都、武汉、南京等 13 城，岗位密度与薪资接近
- * - 强二线：长三角/珠三角制造业强市及发达省会，薪资约为新一线 9 折
- * - 普通二线及强三线：约为新一线 8 折
- * - 其余地级市/县城：约为新一线 7 折
- */
-const CITY_FACTORS: Record<string, number> = {
-  // 港澳
-  '香港': 1.35,
-  '澳门': 1.15,
-  // 一线头部
-  '北京': 1.15,
-  '上海': 1.15,
-  '深圳': 1.15,
-  // 一线
-  '广州': 1.05,
-  // 强新一线（高于普通新一线）
-  '杭州': 1.08,
-  '苏州': 1.05,
-  // 新一线（baseline = 1.0）
-  '成都': 1.0,
-  '武汉': 1.0,
-  '南京': 1.0,
-  '长沙': 1.0,
-  '重庆': 1.0,
-  '天津': 1.0,
-  '合肥': 1.0,
-  '青岛': 1.0,
-  '西安': 1.0,
-  '宁波': 1.0,
-  '东莞': 1.0,
-  '佛山': 1.0,
-  '郑州': 1.0,
-  // 强二线 / 经济强市（≈ 新一线 9 折）
-  '厦门': 0.95,
-  '无锡': 0.92,
-  '珠海': 0.92,
-  '济南': 0.9,
-  '福州': 0.9,
-  '常州': 0.9,
-  '南通': 0.9,
-  '温州': 0.88,
-  '大连': 0.88,
-  '泉州': 0.85,
-  // 普通二线省会 / 强三线（≈ 新一线 8 折）
-  '沈阳': 0.82,
-  '哈尔滨': 0.78,
-  '长春': 0.78,
-  '石家庄': 0.8,
-  '太原': 0.8,
-  '南昌': 0.82,
-  '贵阳': 0.8,
-  '南宁': 0.8,
-  '昆明': 0.8,
-  '海口': 0.82,
-  '兰州': 0.78,
-  '乌鲁木齐': 0.82,
-  '呼和浩特': 0.8,
-  '烟台': 0.82,
-  '潍坊': 0.8,
-  '徐州': 0.82,
-  '嘉兴': 0.85,
-  '绍兴': 0.85,
-  '金华': 0.85,
-  '台州': 0.82,
-  '中山': 0.85,
-  '惠州': 0.85,
-  '唐山': 0.8,
-  '洛阳': 0.78,
-  '襄阳': 0.78,
-  '宜昌': 0.8,
-}
-
-// 默认系数：未在表中列出的地级市/县城（≈ 新一线 7 折）
-const DEFAULT_CITY_FACTOR = 0.7
+// 城市薪资系数 / 学历系数 / 行业风险参数统一由写实基准库 benchmark.ts 提供
+// （cityFactor、schoolTierFactors、riskForRoute 等），此处不再重复维护。
 
 // 用于"异地工作意愿"筛选：tier1 = 一线+港澳；new_tier1 = 再加新一线/强新一线
 const TIER1_CITIES = ['北京', '上海', '深圳', '广州', '香港', '澳门']
@@ -138,41 +60,14 @@ function cityMatches(city: string, accept: UserProfile['acceptRelocate']): boole
   return true
 }
 
-function cityFactor(city: string): number {
-  if (Object.prototype.hasOwnProperty.call(CITY_FACTORS, city)) {
-    return CITY_FACTORS[city]
-  }
-  // 兜底：用 includes 处理可能出现的"市/区"后缀
-  const hit = Object.keys(CITY_FACTORS).find((c) => city.includes(c))
-  return hit ? CITY_FACTORS[hit] : DEFAULT_CITY_FACTOR
-}
-
 /**
- * 院校层次对 offer 质量（起薪 + 简历过筛率）的影响。
- * - 985 / 硕博：有明显加成
- * - 211：小幅加成
- * - 普通本科：基线
- * - 专科：在部分高门槛赛道被显著折扣
+ * 院校层次对薪资的综合系数（排序打分为单值场景使用）。
+ * 实际薪资计算用 benchmark.schoolTierFactors 的非对称 [下限,上限] 系数；
+ * 这里取二者均值用于评分等近似场景。
  */
 function schoolTierFactor(tier: UserProfile['schoolTier'] | undefined): number {
-  switch (tier) {
-    case '985':
-    case 'master':
-      return 1.12
-    case 'phd':
-      return 1.18
-    case '211':
-      return 1.05
-    case 'overseas':
-      return 1.08
-    case 'regular':
-      return 1.0
-    case 'junior':
-      return 0.9
-    case 'other':
-    default:
-      return 1.0
-  }
+  const [lo, hi] = schoolTierFactors(tier)
+  return (lo + hi) / 2
 }
 
 /**
@@ -272,8 +167,9 @@ const ALIASES: Record<string, string[]> = {
   化学: ['新能源', '材料', '医药', '制造'],
   生物医学: ['医疗', '医药', '器械'],
   生物工程: ['医药', '医疗', '新能源'],
-  // ===== 向导里的目标行业标签 → 展开关键词 =====
-  // 这些是向导下拉里的宽泛标签，必须展开才能在专业/行业匹配时命中正确赛道
+  // ===== 向导里的宽泛行业标签（旧版目标行业选项/历史草稿兼容）→ 展开关键词 =====
+  // 这些是宽泛行业词，必须展开才能在专业/行业匹配时命中正确赛道；
+  // 新版向导已改为细分「目标岗位」，岗位名可直接命中路线关键词/路线名
   '国企/银行': ['国企', '银行', '央企', '金融', '财务', '会计', '体制', '公务员', '事业编', '柜员', '风控', '合规'],
   '金融科技': ['金融', '银行', '支付', '互联网金融', '金融科技', '科技'],
   'AI/大数据': ['人工智能', '算法', '数据', '大模型', '机器学习', 'AI'],
@@ -281,6 +177,11 @@ const ALIASES: Record<string, string[]> = {
   '医疗健康': ['医疗', '医药', '健康', '生物', '护理', '临床'],
   '企业服务': ['企业服务', 'SaaS', 'B端', '软件', '服务', '咨询'],
   互联网: ['前端', '后端', '产品', '运营', '软件', '计算机'],
+  // ===== 目标岗位手动输入/岗位选项中的常见叫法 → 展开关键词 =====
+  // 注意：别名展开走的是双向子串匹配，这里不要放「前端」这类短词，
+  // 否则会误命中含该子串的跨域关键词（如「数字前端」是芯片岗）。
+  // 移动端岗位已直接写入前端路线的 keywords，无需在此展开。
+  大数据开发: ['后端', '大数据', 'java', '软件'],
 }
 
 function expandAliases(text: string): string[] {
@@ -301,9 +202,10 @@ function scoreRoute(raw: RawRoute, profile: UserProfile): number {
   let score = 50
   const majorOrJob = profile.majorOrJob || ''
   const skills = profile.skills
-  const targetIndustries = profile.targetIndustries
+  // 字段名沿用 targetIndustries，语义已升级为「目标岗位」（可含具体岗位名/行业方向关键词）
+  const targets = profile.targetIndustries
 
-  // 关键词命中：对每个关键词，检查它是否出现在「专业/岗位」「技能」「意向行业」任一字段中（双向匹配）
+  // 关键词命中：对每个关键词，检查它是否出现在「专业/岗位」「技能」「目标岗位」任一字段中（双向匹配）
   let hits = 0
   let majorHits = 0
   let skillHits = 0
@@ -311,24 +213,28 @@ function scoreRoute(raw: RawRoute, profile: UserProfile): number {
   for (const kw of raw.keywords) {
     const inMajor = keywordMatches(majorOrJob, kw)
     const inSkill = skills.some((s) => keywordMatches(s, kw))
-    const inIndustry = targetIndustries.some((ind) => keywordMatches(ind, kw))
+    const inIndustry = targets.some((ind) => keywordMatches(ind, kw))
     if (inMajor) { hits++; majorHits++ }
     if (inSkill) { hits++; skillHits++ }
     if (inIndustry) { hits++; industryHits++ }
   }
   score += hits * 10
 
-  // 意向行业强命中：用户选了意向行业时，行业相关赛道大幅加分；不相关赛道重罚（避免推荐出完全不相关的方向）
-  if (targetIndustries.length > 0) {
-    const industryMatched =
+  // 目标岗位强命中：用户选/填了目标岗位时，相关赛道大幅加分；不相关赛道重罚（避免推荐出完全不相关的方向）
+  if (targets.length > 0) {
+    // 岗位名「点名」路线：用户目标与路线名直接对应（如"前端工程师"→"前端工程师深耕路线"），
+    // 这是比行业关键词更强的意向信号，每条点名命中给 18 分（最多计 2 条，防止堆标签）
+    const positionNameHits = targets.filter((t) => textMatches(raw.name, t)).length
+    const targetMatched =
+      positionNameHits > 0 ||
       industryHits > 0 ||
-      targetIndustries.some(
-        (ind) => textMatches(raw.industry, ind) || raw.keywords.some((kw) => keywordMatches(ind, kw))
+      targets.some(
+        (t) => textMatches(raw.industry, t) || raw.keywords.some((kw) => keywordMatches(t, kw))
       )
-    if (industryMatched) {
-      score += 30 + industryHits * 5
+    if (targetMatched) {
+      score += 30 + industryHits * 5 + Math.min(positionNameHits, 2) * 18
     } else {
-      // 行业不相关重罚；如果用户同时填了专业（意向明确），惩罚再加重
+      // 目标岗位不相关重罚；如果用户同时填了专业（意向明确），惩罚再加重
       score -= majorOrJob ? 50 : 40
     }
   }
@@ -337,11 +243,11 @@ function scoreRoute(raw: RawRoute, profile: UserProfile): number {
   if (majorOrJob) {
     if (majorHits > 0) {
       score += 15 + majorHits * 5
-    } else if (targetIndustries.length === 0) {
-      // 用户既没有选行业、专业又完全不沾边——降权，避免推荐出风马牛不相及的方向
+    } else if (targets.length === 0) {
+      // 用户既没有选目标岗位、专业又完全不沾边——降权，避免推荐出风马牛不相及的方向
       score -= 25
     } else {
-      // 用户既填了专业又选了行业，但这条路线两不沾——重罚（之前只在没选行业时才罚，是 bug）
+      // 用户既填了专业又选了目标岗位，但这条路线两不沾——重罚（之前只在没选行业时才罚，是 bug）
       score -= 30
     }
   }
@@ -350,10 +256,15 @@ function scoreRoute(raw: RawRoute, profile: UserProfile): number {
   if (skillHits > 0) score += skillHits * 3
 
   // ===== 薪资适配（核心：让期望薪资真正改变路线排序）=====
-  const factor = cityFactor(profile.city) * schoolTierFactor(profile.schoolTier)
-  const y1Min = raw.stages.year1.salary[0] * factor
-  const y1Max = raw.stages.year1.salary[1] * factor
-  const y3Max = raw.stages.year3.salary[1] * factor
+  // 城市系数按资历段压缩：year1≈P2(band1)、year3≈P4(band3)，
+  // 与沙盘实际展示的薪资曲线同源，避免排序依据与展示数值脱节
+  const cF = cityFactor(profile.city)
+  const sF = schoolTierFactor(profile.schoolTier)
+  const f1 = cityBandFactorMid(cF, 1) * sF
+  const f3 = cityBandFactorMid(cF, 3) * sF
+  const y1Min = raw.stages.year1.salary[0] * f1
+  const y1Max = raw.stages.year1.salary[1] * f1
+  const y3Max = raw.stages.year3.salary[1] * f3
   const minSal = profile.minSalaryK || 0
 
   if (minSal > 0) {
@@ -458,44 +369,117 @@ function scoreRoute(raw: RawRoute, profile: UserProfile): number {
     }
   }
 
-  // 经验加成：已工作用户对命中赛道有额外加分
-  if (profile.yearsOfExperience >= 6 && hits > 0) {
+  // 经验加成：已工作 6 年以上用户对命中赛道有额外加分（画像字段单位为月，需换算成年）
+  if (experienceYears(profile) >= 6 && hits > 0) {
     score += 8
   }
 
   return score
 }
 
-function buildRoute(raw: RawRoute, index: number, profile: UserProfile): CareerRoute {
-  const cFactor = cityFactor(profile.city)
-  const sFactor = schoolTierFactor(profile.schoolTier)
-  const factor = cFactor * sFactor
-  const hash = hashString(profile.majorOrJob + raw.name + (profile.schoolTier || ''))
-  const jitter = (hash % 100) / 100 // 0~0.99
+/** 资深段（P5~P7）补充技能：在 year3 顶尖技能之上叠加管理/战略能力 */
+const SENIOR_STAGE_SKILLS: Record<number, string[]> = {
+  4: ['复杂项目主导', '跨部门协作', '指导初级成员'],
+  5: ['团队管理', '技术/业务规划', '人才培养'],
+  6: ['战略洞察', '组织建设', '商业决策'],
+}
 
-  // 根据身份决定起点：在校生 / 应届 / 已有职场经历，均从 current 开始
-  const startIdx = identityStartIndex(profile.identity)
-  const allStages = (['current', 'year1', 'year2', 'year3'] as const).map((stageKey) => {
-    const s = raw.stages[stageKey]
-    const min = Math.round(s.salary[0] * factor * (0.95 + jitter * 0.05))
-    const max = Math.round(s.salary[1] * factor * (0.98 + jitter * 0.06))
+const STAGE_KEYS_3 = ['current', 'year1', 'year2', 'year3'] as const
+const STAGE_KEYS_8 = [
+  'current', 'year1', 'year2', 'year3', 'year4', 'year5', 'year6', 'year7', 'year8',
+] as const
+
+/**
+ * 基于写实基准库构建一条路线。
+ * 关键点：
+ * - 薪资不再用 hash 随机抖动，而是由「资历段基准 × 城市系数 × 学历非对称系数」确定性算出，
+ *   并被该路线 P7 硬天花板封顶；
+ * - 工作经验真正决定起点段：职场人（尤其同方向）从对应资历段切入，转行者降维到初中级；
+ * - 资深段（P5+）的岗位 title / 瓶颈来自基准库（体制/医生/律师等序列有专属瓶颈），
+ *   不再所有路线共用一套"总监"文案。
+ */
+function buildRoute(
+  raw: RawRoute,
+  index: number,
+  profile: UserProfile,
+  relevant: boolean
+): CareerRoute {
+  const deep = !!profile.deepMode
+  const nodeCount = deep ? 9 : 4
+  const stageKeys = deep ? STAGE_KEYS_8 : STAGE_KEYS_3
+
+  // 起点累计相关经验年数：学生/应届=0；职场人同方向按实际年数，转行降维。
+  // 体制内备考路线（公务员/事业编/教师编）例外：往届工龄不抵体制内职级，
+  // current 永远是备考期（无收入），year1 才是试用期——有工作经验的转行者
+  // 不能被"转行降维"逻辑直接塞进科员/骨干教师节点。
+  const startExp = isExamPrepRoute(raw.name, raw.industry)
+    ? 0
+    : relevantYears(profile, relevant)
+
+  // P1~P4 基准区间取自内置岗位数据集（新一线·普通本科锚点）
+  const juniorBands: [number, number][] = STAGE_KEYS_3.map((k) => raw.stages[k].salary)
+  // 整条薪资曲线由基准引擎计算（确定性、被天花板约束）
+  const curve = salaryCurveFor(
+    profile,
+    { juniorBands, routeName: raw.name, industry: raw.industry, relevant },
+    startExp,
+    nodeCount
+  )
+
+  const senior = seniorBandFor(raw.name, raw.industry)
+
+  const stages = stageKeys.map((stageKey, i) => {
+    const exp = startExp + i
+    const { band } = bandAtYears(exp)
+    const [min, max] = curve[i]
+
+    let title: string
+    let bottleneck: string
+    let skills: string[]
+    let certs: string[]
+    let demand: number
+
+    if (band <= 3) {
+      // 初中级段（P1~P4）：直接用内置岗位数据集的岗位/瓶颈/技能/证书
+      const s = raw.stages[STAGE_KEYS_3[band as 0 | 1 | 2 | 3]]
+      title = s.title
+      bottleneck = s.bottleneck
+      skills = s.skills
+      certs = s.certs
+      demand = s.demand
+    } else {
+      // 资深段（P5~P7）：用基准库的岗位 title 与序列专属瓶颈
+      title = senior.titles[band - 4]
+      bottleneck = bottleneckFor(senior.track, band)
+      skills = [...new Set([...(SENIOR_STAGE_SKILLS[band] || SENIOR_STAGE_SKILLS[6]), ...raw.stages.year3.skills.slice(0, 2)])]
+      certs = raw.stages.year3.certs
+      // 资深岗 HC 收缩：每升一段需求降 1 档，不低于 1
+      demand = Math.max(1, raw.stages.year3.demand - (band - 3))
+    }
+
     return {
       stage: stageKey,
-      title: s.title,
+      title,
       salaryRange: [min, max] as [number, number],
-      demandLevel: s.demand,
-      bottleneck: s.bottleneck,
-      requiredSkills: s.skills,
-      certificates: s.certs,
+      demandLevel: demand,
+      bottleneck,
+      requiredSkills: skills,
+      certificates: certs,
     }
   })
 
-  // 取从起点开始的 4 个节点（不足则回退到 current）
-  const stages = allStages.slice(startIdx, startIdx + 4)
-  while (stages.length < 4) stages.unshift(allStages[0])
-
   const matchScore = Math.max(40, Math.min(98, Math.round(scoreRoute(raw, profile))))
   const involutionLevel = levelToInvolution(raw.involutionScore)
+
+  // 行业风险基准注记：把内置风险库中与用户偏好冲突的关键点提示出来
+  const risk = riskForRoute(raw.name, raw.industry)
+  const riskNotes: string[] = []
+  if (risk.aiReplace >= 0.65 && /低加班|稳定|工作稳定/.test(profile.preferences.join(','))) {
+    riskNotes.push('该方向初级/执行岗 AI 替代风险较高，需尽早向策略、管理或复合业务方向分流')
+  }
+  if (risk.agePenalty >= 0.7) {
+    riskNotes.push('行业 35 岁分水岭明显，第 5~6 年须完成管理/专家/资源的分流卡位')
+  }
 
   const schoolNote = (() => {
     switch (profile.schoolTier) {
@@ -531,7 +515,7 @@ function buildRoute(raw: RawRoute, index: number, profile: UserProfile): CareerR
       min: s.salaryRange[0],
       max: s.salaryRange[1],
     })),
-    pitfalls: [...raw.pitfalls, schoolNote],
+    pitfalls: [...raw.pitfalls, ...riskNotes, schoolNote],
     entryCost: raw.entryCost,
     switchDifficulty: raw.switchDifficulty,
     ceiling: raw.ceiling,
@@ -539,14 +523,33 @@ function buildRoute(raw: RawRoute, index: number, profile: UserProfile): CareerR
   }
 }
 
-/** 计算路线与用户背景的"原始相关性"——只看专业/技能/行业关键词命中，不掺偏好和薪资 */
+/** 计算路线与用户背景的"原始相关性"——只看专业/技能/目标岗位关键词命中，不掺偏好和薪资 */
 function relevanceHits(raw: RawRoute, profile: UserProfile): number {
+  const majorOrJob = profile.majorOrJob || ''
+  const targets = profile.targetIndustries
+  let hits = 0
+  for (const kw of raw.keywords) {
+    if (keywordMatches(majorOrJob, kw)) hits++
+    if (profile.skills.some((s) => keywordMatches(s, kw))) hits++
+    if (targets.some((ind) => keywordMatches(ind, kw))) hits++
+  }
+  // 目标岗位与路线名直接对应（如"前端工程师"→"前端工程师深耕路线"）：强相关，计 3 次命中，
+  // 保证用户点名的岗位路线不会因其他因素被挤出展示位
+  if (targets.some((t) => textMatches(raw.name, t))) hits += 3
+  return hits
+}
+
+/**
+ * 路线与用户「已有背景」（专业/当前岗位 + 技能）的相关性——不含目标岗位意向。
+ * 用于决定职场人是否"转行降维"：目标岗位只代表意向，不代表已有相关经验，
+ * 机械专业应届生/老手转行做前端，仍应从初中级段切入而非按 3 年前端定薪。
+ */
+function backgroundHits(raw: RawRoute, profile: UserProfile): number {
   const majorOrJob = profile.majorOrJob || ''
   let hits = 0
   for (const kw of raw.keywords) {
     if (keywordMatches(majorOrJob, kw)) hits++
     if (profile.skills.some((s) => keywordMatches(s, kw))) hits++
-    if (profile.targetIndustries.some((ind) => keywordMatches(ind, kw))) hits++
   }
   return hits
 }
@@ -557,6 +560,8 @@ function generateRoutes(input: UserProfile): CareerSandbox {
     idx,
     score: scoreRoute(raw, input),
     relevance: relevanceHits(raw, input),
+    // 仅专业/技能背景命中才算"同方向"，用于转行降维；目标岗位意向不计入
+    background: backgroundHits(raw, input),
   })).sort((a, b) => b.score - a.score)
 
   // 选取展示的 4 条路线：
@@ -569,12 +574,15 @@ function generateRoutes(input: UserProfile): CareerSandbox {
   const viableRelevant = relevant.filter((s) => s.score >= 25)
   const top = [...viableRelevant, ...irrelevant, ...relevant.filter((s) => s.score < 25)].slice(0, 4)
   top.sort((a, b) => b.score - a.score)
-  const baseRoutes = top.map((item, i) => buildRoute(item.raw, i, input))
+  // 背景相关性决定职场人是否"转行降维"：同方向路线按实际经验定起点，
+  // 转行路线（仅目标岗位命中、专业/技能不沾边）从初中级切入
+  const baseRoutes = top.map((item, i) => buildRoute(item.raw, i, input, item.background > 0))
 
-  // 长周期深度推演：把 3 年期路线外推到 8 年（资深→专家→负责人→总监的连贯轨迹）
+  // 长周期深度推演：buildRoute 已直接按资历段基准生成 9 个节点（current + year1~8），
+  // 资深段薪资被 P7 天花板封顶、岗位 title/瓶颈走基准库，无需再做指数外推
   const deep = !!input.deepMode
   const horizon = deep ? 8 : 3
-  const routes = deep ? baseRoutes.map((r) => extrapolateLongCycle(r, input)) : baseRoutes
+  const routes = baseRoutes
 
   const identityText = {
     student: '在校生',
@@ -619,8 +627,13 @@ function generateRoutes(input: UserProfile): CareerSandbox {
       ? '你仅接受一线/新一线城市机会。'
       : ''
 
+  // 用户显式填写了目标岗位时，概览中点名回应（强化"推演围绕你的目标岗位展开"的感知）
+  const targetText = input.targetIndustries.length
+    ? `围绕你目标的${input.targetIndustries.map((t) => `「${t}」`).join('、')}岗位，`
+    : ''
+
   const summary =
-    `作为一名${identityText}，你所在的${cityText}市场中，${topIndustry}方向与你的背景（${
+    `作为一名${identityText}，你所在的${cityText}市场中，${targetText}${topIndustry}方向与你的背景（${
       input.majorOrJob || '未填写专业'
     }）匹配度最高，起步薪资约 ${salaryStart}K/月，${yearText}薪资上限约 ${salaryTop}K/月。` +
     (deep ? '本次为 8 年长周期深度推演，第 5~6 年是管理/专家分岔关键期。' : '') +
@@ -634,22 +647,101 @@ function generateRoutes(input: UserProfile): CareerSandbox {
 
 function generateGrowthPlan(input: { profile: UserProfile; route: CareerRoute }): GrowthPlan {
   const { route, profile } = input
+  const text = route.name + route.industry
+  const isTeacherRoute = /教师|老师|教培|师范|教学|教师编|教招|特岗|支教|幼师/.test(text)
+  const examPrep = isExamPrepRoute(route.name, route.industry)
+
   const tpl = findTemplate(route)
-  const factor = cityFactor(profile.city) * schoolTierFactor(profile.schoolTier)
-  const targetSalary: [number, number] = [
+
+  // 已持有教师资格证（技能/简历经历中体现）：跳过考证阶段，直接从教招备考开始
+  const backgroundText = [
+    profile.majorOrJob || '',
+    ...(profile.skills || []),
+    ...(profile.resume?.workExperience || []),
+  ].join(' ')
+  const hasTeacherCert = isTeacherRoute && /教师资格|教资|教师证/.test(backgroundText)
+  const useCertified = hasTeacherCert && !!tpl.certifiedMonths
+  const baseMonths = useCertified ? tpl.certifiedMonths! : tpl.months
+  const baseGoal = useCertified && tpl.certifiedGoalSummary ? tpl.certifiedGoalSummary : tpl.goalSummary
+
+  // 计划起点：
+  // - 体制内备考（公务员/事业编）与教师考证考编路线：备考从零开始，往届工龄不抵考编；
+  // - 普通职场路线：按已有「相关」工作年限跳过入门月份，不足 12 个月用进阶月份补齐，
+  //   不能让工作多年的人再从"了解岗位是什么"的第一个月学起。
+  const relevant = aiRouteRelevant(route.name, route.industry, profile)
+  const expYears = examPrep || isTeacherRoute ? 0 : relevantYears(profile, relevant)
+  const { band } = bandAtYears(expYears)
+  // 各资历段跳过的入门月数：P1(0年)=0，P2(1~2年)=3，P3(3~4年)=6，P4(5~6年)=8，P5+=9
+  const skipTable = [0, 3, 6, 8, 9, 9, 9]
+  const skip =
+    examPrep || isTeacherRoute
+      ? 0
+      : Math.min(skipTable[band], Math.max(0, baseMonths.length - 3))
+
+  let monthTpls = baseMonths.slice(skip)
+  if (skip > 0) {
+    // 有经验者：模板尾部的"应届求职月"（简历/面试/谈薪/入职）与进阶月份的
+    // 完整节奏重复且顺序错位，剔除后由进阶月份统一承接（进阶月以能力建设开头、
+    // 以跳槽/晋升收尾，顺序才对）
+    const JOB_HUNT_THEME_RE = /简历|面试|谈薪|offer|入职|投递|求职|找工作/
+    monthTpls = monthTpls.filter((m) => !JOB_HUNT_THEME_RE.test(m.theme))
+  }
+  if (monthTpls.length < 12) {
+    monthTpls = [...monthTpls, ...buildAdvancedTailMonths(route, 12 - monthTpls.length)]
+  }
+
+  // 目标岗位/薪资：零基础沿用模板目标（≈中级）；有经验者对齐 12 个月后（year1 节点）
+  // 的资历段——route.nodes 已按用户实际工作年限定薪，直接取第二个节点即可
+  const factor = cityBandFactorMid(cityFactor(profile.city), 2) * schoolTierFactor(profile.schoolTier)
+  let targetRole = tpl.targetRole
+  let goalSummary = baseGoal
+  let targetSalary: [number, number] = [
     Math.round(tpl.targetSalary[0] * factor),
     Math.round(tpl.targetSalary[1] * factor),
   ]
+  if (!examPrep && !isTeacherRoute && band >= 1 && route.nodes.length > 1) {
+    // 目标对齐「下一次晋升」资历段：找到达到下一档位所需年数对应的节点
+    // （route.nodes 第 i 个节点 = 起点经验 + i 年），比机械取 year1 更贴近真实晋升节奏
+    const nextBandEntry = BAND_ENTRY_YEARS[Math.min(band + 1, 6)]
+    const targetIndex = Math.max(
+      1,
+      Math.min(nextBandEntry - expYears, route.nodes.length - 1)
+    )
+    const targetNode = route.nodes[targetIndex]
+    targetRole = targetNode.title
+    targetSalary = [targetNode.salaryRange[0], targetNode.salaryRange[1]]
+    goalSummary = `结合你 ${expYears} 年相关工作经验，12 个月内补齐向「${targetNode.title}」进阶的短板，完成晋升或跳槽涨薪`
+  }
 
-  const months = tpl.months.map((m, i) => {
+  // 已掌握技能（用户填写的技能 + 当前资历节点要求的技能）→ 相关任务标 review
+  const knownSkills = new Set(
+    [
+      ...(profile.skills || []),
+      ...(route.nodes[0]?.requiredSkills || []),
+    ]
+      .map((s) => s.toLowerCase())
+      .filter((s) => s.length >= 2)
+  )
+
+  const months = monthTpls.map((m, i) => {
     const learningTasks: LearningTask[] = m.learningTasks.map((task) => {
-      const isReview = profile.skills.some((s) => task.toLowerCase().includes(s.toLowerCase()))
+      const lower = task.toLowerCase()
+      const isReview = Array.from(knownSkills).some((s) => lower.includes(s))
       return {
         task,
         done: false,
         type: isReview ? ('review' as const) : ('new' as const),
       }
     })
+    let keyReminder = m.keyReminder
+    // 在职备考提示（仅第一个月追加一次）
+    if (i === 0 && profile.identity === 'professional') {
+      if (examPrep) {
+        keyReminder += ' 在职备考不建议裸辞：工作日每天保证 2~3 小时有效学习、周末整块时间刷套卷，收入断了心态更容易崩。'
+      } else if (isTeacherRoute) {
+        keyReminder += ' 在职备考别裸辞：教学/带班经验本身就是面试资产，把每天的工作当成试讲与结构化练习。'
+      }
+    }
     return {
       month: i + 1,
       theme: m.theme,
@@ -657,15 +749,15 @@ function generateGrowthPlan(input: { profile: UserProfile; route: CareerRoute })
       practiceProjects: m.practiceProjects,
       jobActions: m.jobActions,
       certPrep: m.certPrep,
-      keyReminder: m.keyReminder,
+      keyReminder,
     }
   })
 
   return {
     routeId: route.id,
     routeName: route.name,
-    targetRole: tpl.targetRole,
-    goalSummary: tpl.goalSummary,
+    targetRole,
+    goalSummary,
     targetSalary,
     months,
   }
@@ -742,19 +834,25 @@ export function localSalaryBenchmark(city: string, jobKeyword: string) {
     .slice(0, 3)
 
   const matches = scored.map(({ raw }) => {
-    const scale = (s: [number, number]): [number, number] => [
-      Math.round(s[0] * factor),
-      Math.round(s[1] * factor),
+    // 各资历段分别套用随资历压缩的城市系数：低线城市资深岗天花板塌缩远大于起薪
+    const scaleBand = (s: [number, number], band: 0 | 1 | 3 | 4 | 6): [number, number] => [
+      Math.round(s[0] * cityBandFactor(factor, band, 'min')),
+      Math.round(s[1] * cityBandFactor(factor, band, 'max')),
     ]
+    // 资深段天花板锚点（P5~P7），帮助模型判断高薪断言是否离谱
+    const senior = seniorBandFor(raw.name, raw.industry)
     return {
       track: raw.name,
       industry: raw.industry,
-      city: city || '未指定（按全国基准 0.7 系数）',
+      city: city || '未指定（按全国三四线基准 0.62 系数）',
       cityFactor: Number(factor.toFixed(2)),
-      startSalaryK: scale(raw.stages.current.salary),
-      year1SalaryK: scale(raw.stages.year1.salary),
-      year3SalaryK: scale(raw.stages.year3.salary),
-      note: '本地内置数据集参考值（非实时数据），需与实时搜索结果交叉验证',
+      startSalaryK: scaleBand(raw.stages.current.salary, 0),
+      year1SalaryK: scaleBand(raw.stages.year1.salary, 1),
+      year3SalaryK: scaleBand(raw.stages.year3.salary, 3),
+      // P5（资深，约 7~9 年）/ P7（总监·专家，约 13 年+）薪资区间
+      seniorSalaryK: scaleBand(senior.bands[0], 4),
+      ceilingSalaryK: scaleBand(senior.bands[2], 6),
+      note: '本地内置薪资基准（非实时数据，参考薪酬报告估算），资深段已按城市等级压缩，需与实时搜索结果交叉验证；超出 ceilingSalaryK 的薪资断言基本不可信',
     }
   })
 

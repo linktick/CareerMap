@@ -52,14 +52,14 @@ function startOwn() {
           <NTag size="tiny" :bordered="false" type="info">案例演示</NTag>
         </div>
         <p class="text-sm text-gray-600 leading-relaxed">
-          以下为一名<b class="text-gray-900">电子商务专业</b>在校生（坐标杭州，目标行业：电商）生成的真实成长方案示例。
+          以下为一名<b class="text-gray-900">电子商务专业</b>在校生（坐标杭州，目标岗位：电商运营）生成的真实成长方案示例。
           数据来自本地岗位数据集与电商运营成长模板，展示了从运营助理到独立负责店铺单品运营的 12 个月路径。
           你也可以填写自己的信息，生成专属于你的职业沙盘。
         </p>
         <div class="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-xs text-gray-500">
           <span>专业：<b class="text-gray-700">{{ DEMO_PROFILE.majorOrJob }}</b></span>
           <span>城市：<b class="text-gray-700">{{ DEMO_PROFILE.city }}</b></span>
-          <span>目标行业：<b class="text-gray-700">{{ DEMO_PROFILE.targetIndustries.join('、') }}</b></span>
+          <span>目标岗位：<b class="text-gray-700">{{ DEMO_PROFILE.targetIndustries.join('、') }}</b></span>
           <span>匹配路线：<b class="text-gray-700">{{ topRoute.name }}</b></span>
         </div>
       </div>

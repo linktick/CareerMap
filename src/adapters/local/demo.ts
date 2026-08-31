@@ -6,7 +6,7 @@ import type { CareerSandbox, GrowthPlan, UserProfile } from '@/types/career'
 import { __localInternals } from './index'
 
 /**
- * 演示用户画像：电子商务专业在校生，目标电商行业，坐标杭州。
+ * 演示用户画像：电子商务专业在校生，目标岗位「电商运营」，坐标杭州。
  */
 export const DEMO_PROFILE: UserProfile = {
   identity: 'student',
@@ -14,7 +14,7 @@ export const DEMO_PROFILE: UserProfile = {
   city: '杭州',
   schoolTier: 'regular',
   yearsOfExperience: 0,
-  targetIndustries: ['电商'],
+  targetIndustries: ['电商运营'],
   preferences: ['长期发展空间', '创造性'],
   acceptRelocate: 'new_tier1',
   acceptOvertime: true,

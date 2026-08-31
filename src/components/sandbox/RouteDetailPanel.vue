@@ -85,6 +85,21 @@ onMounted(() => {
 watch(() => props.route, () => renderSalary(), { immediate: true })
 
 const involutionPercent = computed(() => props.route ? props.route.involutionScore * 10 : 0)
+
+/** 推荐证书：同一证书常在多个阶段重复出现，按名称去重后再展示 */
+const uniqueCertificates = computed<string[]>(() => {
+  if (!props.route) return []
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const raw of props.route.nodes.flatMap((n) => n.certificates)) {
+    const name = raw.trim()
+    if (name && !seen.has(name)) {
+      seen.add(name)
+      result.push(name)
+    }
+  }
+  return result
+})
 </script>
 
 <template>
@@ -161,10 +176,10 @@ const involutionPercent = computed(() => props.route ? props.route.involutionSco
       </div>
 
       <!-- Certificates -->
-      <div v-if="route.nodes.some(n => n.certificates.length)">
+      <div v-if="uniqueCertificates.length">
         <div class="text-sm font-semibold text-gray-800 mb-2">推荐证书</div>
         <NSpace wrap :size="[6, 6]">
-          <NTag v-for="c in route.nodes.flatMap(n => n.certificates)" :key="c" size="small" :bordered="false">
+          <NTag v-for="c in uniqueCertificates" :key="c" size="small" :bordered="false">
             📜 {{ c }}
           </NTag>
         </NSpace>

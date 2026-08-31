@@ -19,167 +19,107 @@ import type {
 } from '@/types/research'
 import { INTEL_CATALOG, type IntelSeed } from './intelDataset'
 import { levelToInvolution } from '@/utils/format'
+import {
+  aiRouteRelevant,
+  bandAtYears,
+  bottleneckFor,
+  juniorBandsFor,
+  juniorStageFor,
+  relevantYears,
+  salaryCurveFor,
+  seniorBandFor,
+  trackTypeOf,
+  type TrackType,
+} from './benchmark'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-function hashString(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i)
-    h |= 0
-  }
-  return Math.abs(h)
+// ============ 长周期外推（写实基准驱动） ============
+//
+// 旧实现按固定环比增速逐年复利外推，且所有序列共用"资深→专家→总监"的 title 与
+// 瓶颈文案，导致：①算法/销售等高方差赛道 year8 薪资复利到 150K+ 的离谱值；
+// ②公务员/教师 year8 也变成"总监"。现改为：薪资由 benchmark 的资历段基准 +
+// 城市/学历系数计算并被 P7 硬天花板封顶；资深段 title/瓶颈走基准库的序列专属数据。
+
+const STAGE_ORDER_9: Stage[] = [
+  'current', 'year1', 'year2', 'year3',
+  'year4', 'year5', 'year6', 'year7', 'year8',
+]
+
+/** 资深段（P5~P7）补充技能，与 benchmark 资历段对齐 */
+const SENIOR_NODE_SKILLS: Record<number, string[]> = {
+  4: ['复杂项目主导', '跨部门协作', '指导初级成员'],
+  5: ['团队管理', '技术/业务规划', '人才培养'],
+  6: ['战略洞察', '组织建设', '商业决策'],
 }
 
-// ============ 长周期外推 ============
-
-const EXTENDED_STAGES: Stage[] = ['year4', 'year5', 'year6', 'year7', 'year8']
-
-/** 各年份薪资环比增长（min, max），随资历加深递减 */
-const LONG_GROWTH: Record<string, [number, number]> = {
-  year4: [1.14, 1.17],
-  year5: [1.11, 1.14],
-  year6: [1.09, 1.11],
-  year7: [1.07, 1.09],
-  year8: [1.05, 1.07],
-}
-
-const LONG_BOTTLENECK: Record<string, string> = {
-  year4: '从执行者到负责人的跨越：能否独当一面主导完整项目或业务线',
-  year5: '管理线与专家线分岔：首次带团队或深耕专业深度的关键选择窗口',
-  year6: '35 岁前后职业安全分水岭：行业人脉与不可替代性必须成型',
-  year7: '行业周期与 AI 技术替代风险集中显现，跨界复合能力成为护城河',
-  year8: '总监/专家层岗位稀少，晋升依赖业务结果与机遇，跳槽溢价明显收窄',
-}
-
-const LONG_SKILLS: Record<string, string[]> = {
-  year4: ['项目主导', '跨部门协作', '复杂问题拆解'],
-  year5: ['团队管理', '技术/业务规划', '人才培养'],
-  year6: ['团队管理', '业务规划', '资源整合'],
-  year7: ['战略洞察', '行业资源', '风险管理'],
-  year8: ['组织建设', '商业决策', '行业影响力'],
-}
-
-/** 剥离岗位 title 的职级前缀，得到基础岗位名 */
-function baseTitle(title: string): string {
-  return title
-    .replace(/(高级|资深|主任|首席|中级|初级|助理|实习)/g, '')
-    .trim() || title
-}
-
-/** 判断路线是否偏管理/经营序列（用于长周期 title 演进） */
-function isManagementTrack(route: CareerRoute): boolean {
-  const text = route.name + route.industry + route.nodes.map((n) => n.title).join()
-  return /运营|销售|市场|HR|人力|财务|法务|教师|教研|客服|采购|供应链|客户经理|公务员|事业|银行|电商|新媒体|内容|直播|产品/.test(
-    text
-  )
-}
-
-function longTitle(route: CareerRoute, stage: Stage, yearIdx: number): string {
-  const y3 = route.nodes[3]
-  const base = baseTitle(y3.title)
-  const mgmt = isManagementTrack(route)
-  if (mgmt) {
-    if (yearIdx <= 5) return `${base}经理`
-    if (yearIdx <= 7) return `高级${base}经理`
-    return `${base}总监/业务负责人`
-  }
-  if (yearIdx === 4) return `资深${base}`
-  if (yearIdx === 5) return `${base}专家`
-  if (yearIdx <= 7) return `${base}技术负责人/资深专家`
-  return `${base}架构师/领域专家`
-}
-
-/**
- * 把 3 年期路线（4 节点）外推为 8 年期路线（9 节点）。
- * 薪资按递减增速外推，岗位沿"资深→专家→负责人/经理→总监"演进，
- * 需求量随岗位级别升高而减少（高级岗位 HC 更少）。
- */
-export function extrapolateLongCycle(route: CareerRoute, profile: UserProfile): CareerRoute {
-  const nodes = [...route.nodes]
-  const curve = [...route.salaryCurve]
-  const jitter = (hashString(route.name + profile.city) % 100) / 100 // 0~0.99
-
-  for (let i = 0; i < EXTENDED_STAGES.length; i++) {
-    const stage = EXTENDED_STAGES[i]
-    const yearIdx = i + 4
-    const prev = nodes[nodes.length - 1]
-    const [gMin, gMax] = LONG_GROWTH[stage]
-    // 确定性微扰：±2% 以内，避免每条路线涨幅雷同
-    const jitterMin = 1 + (jitter - 0.5) * 0.04
-    const min = Math.round(prev.salaryRange[0] * gMin * jitterMin)
-    const max = Math.round(prev.salaryRange[1] * gMax * jitterMin)
-    // 高级岗位 HC 更少：year6 起需求量较 year3 降 1 档（不低于 1）
-    const demand = yearIdx >= 6 ? Math.max(1, prev.demandLevel - 1) : prev.demandLevel
-    const prevSkills = prev.requiredSkills
-    nodes.push({
-      stage,
-      title: longTitle(route, stage, yearIdx),
-      salaryRange: [min, max],
-      demandLevel: demand,
-      bottleneck: LONG_BOTTLENECK[stage],
-      requiredSkills: [...new Set([...LONG_SKILLS[stage], ...prevSkills.slice(0, 3)])],
-      certificates: [],
-    })
-    curve.push({ stage, min, max })
-  }
-
-  return {
-    ...route,
-    nodes,
-    salaryCurve: curve,
-    // 长周期下风险与天花板提示更侧重长期
-    ceiling: route.ceiling,
-    pitfalls: [
-      ...route.pitfalls,
-      '长周期提示：第 5~6 年是管理/专家分岔点，选错方向回头成本高',
-      '长周期提示：35 岁后高级岗位 HC 收缩，需提前积累人脉与不可替代性',
-    ],
-  }
+/** 资深段的技能清单：基准通用技能 + 路线已有顶级技能 */
+function seniorSkillsForBand(route: CareerRoute, band: number): string[] {
+  const top = route.nodes[Math.min(3, route.nodes.length - 1)]?.requiredSkills || []
+  return [...new Set([...(SENIOR_NODE_SKILLS[band] || SENIOR_NODE_SKILLS[6]), ...top.slice(0, 2)])]
 }
 
 /**
  * 长周期归一化：保证路线恰好 9 个节点（current + year1~year8）。
  * - 已是 9 节点：原样返回；
- * - 只有 4 节点（标准 3 年期）：走完整外推；
- * - 模型返回了 5~8 个节点（部分年长节点）：从末尾按同样的增长规律续补到 year8。
+ * - 不足 9 节点（AI 只返回了 3 年期或部分年长节点）：用写实基准库把缺失节点
+ *   补齐——薪资按资历段基准 × 城市/学历系数计算并被 P7 天花板封顶，
+ *   岗位 title/瓶颈走序列专属基准（体制/医生/律师不再被写成"总监"）。
  */
 export function ensureLongCycle(route: CareerRoute, profile: UserProfile): CareerRoute {
   if (route.nodes.length >= 9) return route
-  if (route.nodes.length === 4) return extrapolateLongCycle(route, profile)
 
-  const stageOrder: Stage[] = [
-    'current', 'year1', 'year2', 'year3',
-    'year4', 'year5', 'year6', 'year7', 'year8',
-  ]
   const r: CareerRoute = {
     ...route,
     nodes: [...route.nodes],
     salaryCurve: [...route.salaryCurve],
   }
-  const jitter = (hashString(route.name + profile.city) % 100) / 100
+  const track = trackTypeOf(route.name, route.industry)
+  const senior = seniorBandFor(route.name, route.industry)
+  // 与 AI 钳制层同一套相关性判定：职场人转行路线按「降维入行」封顶 2 年相关经验
+  const relevant = aiRouteRelevant(route.name, route.industry, profile)
+  const startExp = relevantYears(profile, relevant)
+  const { juniorBands } = juniorBandsFor(route.name, route.industry)
+  // 用基准引擎算出整条 9 节点薪资曲线（只用于补齐缺失节点，已有节点保留模型值）
+  const curve = salaryCurveFor(
+    profile,
+    { juniorBands, routeName: route.name, industry: route.industry, relevant },
+    startExp,
+    9
+  )
+
   while (r.nodes.length < 9) {
-    const idx = r.nodes.length
-    const stage = stageOrder[idx]
-    const yearIdx = idx
-    const prev = r.nodes[idx - 1]
-    const [gMin, gMax] = LONG_GROWTH[stage] ?? [1.05, 1.07]
-    const jitterFactor = 1 + (jitter - 0.5) * 0.04
-    const min = Math.round(prev.salaryRange[0] * gMin * jitterFactor)
-    const max = Math.round(prev.salaryRange[1] * gMax * jitterFactor)
-    const demand = yearIdx >= 6 ? Math.max(1, prev.demandLevel - 1) : prev.demandLevel
+    const i = r.nodes.length
+    const exp = startExp + i
+    const { band } = bandAtYears(exp)
+    let [min, max] = curve[i]
+    // 边界单调性：补齐节点相对模型已给节点，上限允许 10% 以内回落、下限允许 15%，超出则贴边
+    const prevMax = r.salaryCurve[i - 1]?.max ?? 0
+    const prevMin = r.salaryCurve[i - 1]?.min ?? 0
+    if (prevMax > 0 && max < prevMax * 0.9) max = Math.round(prevMax * 0.95)
+    if (prevMin > 0 && min < prevMin * 0.85) min = Math.round(prevMin * 0.9)
+    if (min > max) min = max
+    // 初中级段直接取内置岗位数据集（与本地引擎完全同源，避免引用模型节点下标造成 title 回退）；
+    // 资深段（P5+）用基准库的 title/瓶颈/技能
+    const js = band <= 3 ? juniorStageFor(route.name, route.industry, band) : null
+    const prevNode = r.nodes[r.nodes.length - 1]
+    const title = js?.title ?? (band <= 3 ? prevNode?.title ?? senior.titles[0] : senior.titles[band - 4])
+    const bottleneckText = js?.bottleneck ?? bottleneckFor(track, band)
+    const skills = js?.skills ?? (band <= 3 ? prevNode?.requiredSkills ?? [] : seniorSkillsForBand(route, band))
+    // 资深段 HC 收缩：P5 起需求逐档降 1，不低于 1
+    const demand = band >= 5
+      ? Math.max(1, (prevNode?.demandLevel ?? 3) - 1)
+      : js?.demand ?? prevNode?.demandLevel ?? 3
     r.nodes.push({
-      stage,
-      title: longTitle(r, stage, yearIdx),
+      stage: STAGE_ORDER_9[i],
+      title,
       salaryRange: [min, max],
       demandLevel: demand,
-      bottleneck: LONG_BOTTLENECK[stage] ?? LONG_BOTTLENECK.year8,
-      requiredSkills: [
-        ...new Set([...(LONG_SKILLS[stage] ?? LONG_SKILLS.year8), ...prev.requiredSkills.slice(0, 3)]),
-      ],
-      certificates: [],
+      bottleneck: bottleneckText,
+      requiredSkills: skills,
+      certificates: js?.certs ?? [],
     })
-    r.salaryCurve.push({ stage, min, max })
+    r.salaryCurve.push({ stage: STAGE_ORDER_9[i], min, max })
   }
   return r
 }

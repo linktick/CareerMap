@@ -10,6 +10,7 @@ import { useProfileStore } from '@/stores/profile'
 import { useModeStore } from '@/stores/mode'
 import { useSandboxStore } from '@/stores/sandbox'
 import { CHINA_CITY_OPTIONS } from '@/utils/chinaCities'
+import { TARGET_POSITION_GROUPS } from '@/utils/positions'
 import type { UserProfile } from '@/types/career'
 import type { ResumeParseResult } from '@/types/research'
 import ResumeUploader from '@/components/wizard/ResumeUploader.vue'
@@ -27,10 +28,15 @@ const PREF_OPTIONS = [
   '高薪收入', '工作稳定', '低加班', '长期发展空间',
   '创造性', '社会影响力', '工作自由度',
 ]
-const INDUSTRY_OPTIONS = [
-  '互联网', '金融科技', 'AI/大数据', '游戏', '电商',
-  '企业服务', '教育', '医疗健康', '硬件/半导体', '国企/银行',
-]
+
+/** 从业月数 → 友好展示（如 36 → "3 年"、40 → "3 年 4 个月"） */
+function formatMonths(months: number): string {
+  const m = Math.max(0, Number(months) || 0)
+  if (m === 0) return '0 个月'
+  const y = Math.floor(m / 12)
+  const rest = m % 12
+  return [y ? `${y} 年` : '', rest ? `${rest} 个月` : ''].filter(Boolean).join(' ')
+}
 const SCHOOL_TIER_OPTIONS: { label: string; value: NonNullable<UserProfile['schoolTier']> }[] = [
   { label: '985 院校', value: '985' },
   { label: '211 院校（非 985）', value: '211' },
@@ -150,20 +156,25 @@ async function submit() {
                 @update:value="(v) => updateField('schoolTier', v)"
               />
             </NFormItem>
-            <NFormItem label="从业月数（在校生填 0）">
+            <NFormItem label="从业月数（在校生填 0；1 年 = 12 个月，如工作 3 年填 36）">
               <NInputNumber
                 :value="form.yearsOfExperience"
                 :min="0"
-                :max="60"
+                :max="600"
+                :step="6"
                 class="w-full"
+                placeholder="如：36"
                 @update:value="(v) => updateField('yearsOfExperience', Number(v) || 0)"
               />
             </NFormItem>
-            <NFormItem label="目标行业（可多选，不选则不限）">
+            <NFormItem label="目标岗位（可多选、可直接输入岗位名，不选则不限）">
               <NSelect
                 multiple
+                filterable
+                tag
                 :value="form.targetIndustries"
-                :options="INDUSTRY_OPTIONS.map(c => ({ label: c, value: c }))"
+                :options="TARGET_POSITION_GROUPS"
+                placeholder="按行业分组选择，或直接输入目标岗位名（如：前端工程师）"
                 @update:value="(v) => updateField('targetIndustries', v)"
               />
             </NFormItem>
@@ -312,8 +323,8 @@ async function submit() {
           <NDescriptionsItem label="城市">{{ form.city }}</NDescriptionsItem>
           <NDescriptionsItem label="专业/岗位" :span="2">{{ form.majorOrJob || '—' }}</NDescriptionsItem>
           <NDescriptionsItem label="院校层次">{{ schoolTierLabel(form.schoolTier) }}</NDescriptionsItem>
-          <NDescriptionsItem label="从业月数">{{ form.yearsOfExperience }} 个月</NDescriptionsItem>
-          <NDescriptionsItem label="目标行业">{{ form.targetIndustries.join('、') || '不限' }}</NDescriptionsItem>
+          <NDescriptionsItem label="从业时长">{{ formatMonths(form.yearsOfExperience) }}</NDescriptionsItem>
+          <NDescriptionsItem label="目标岗位" :span="2">{{ form.targetIndustries.join('、') || '不限' }}</NDescriptionsItem>
           <NDescriptionsItem label="技能" :span="2">
             <span v-if="form.skills.length">{{ form.skills.join('、') }}</span>
             <span v-else class="text-gray-400">未填写</span>

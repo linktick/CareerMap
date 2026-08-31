@@ -22,7 +22,7 @@ export interface RawRoute {
 
 export const RAW_ROUTES: RawRoute[] = [
   {
-    keywords: ['前端', 'web', 'vue', 'react', 'javascript', 'js', 'html', 'css', 'frontend', '前端开发', '计算机', '软件'],
+    keywords: ['前端', 'web', 'vue', 'react', 'javascript', 'js', 'html', 'css', 'frontend', '前端开发', '计算机', '软件', 'android', '安卓', 'ios', '移动端', 'app开发'],
     industry: '互联网/软件',
     name: '前端工程师深耕路线',
     summary: '从初级前端到高级前端工程师，走技术专家路径',
@@ -40,7 +40,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '应届生/实习前端', salary: [6, 10], demand: 4, bottleneck: '缺乏工程化经验，项目停留在 demo 阶段', skills: ['HTML', 'CSS', 'JavaScript', 'Git'], certs: [] },
       year1: { title: '初级前端工程师', salary: [10, 16], demand: 4, bottleneck: '只懂框架用法不懂原理，复杂业务 hold 不住', skills: ['Vue3/React', 'TypeScript', '工程化', '接口联调'], certs: [] },
       year2: { title: '中级前端工程师', salary: [16, 25], demand: 3, bottleneck: '性能优化、跨端、Node BFF 等纵深不足', skills: ['性能优化', 'Node.js', '微前端', '跨端开发'], certs: [] },
-      year3: { title: '高级前端/前端技术专家', salary: [25, 40], demand: 3, bottleneck: '架构能力与团队影响力决定能否进大厂', skills: ['架构设计', '工程体系', '团队推动', '跨栈协作'], certs: [] },
+      year3: { title: '高级前端/前端技术专家', salary: [22, 35], demand: 3, bottleneck: '架构能力与团队影响力决定能否进大厂', skills: ['架构设计', '工程体系', '团队推动', '跨栈协作'], certs: [] },
     },
   },
   {
@@ -62,7 +62,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '实习生/应届', salary: [7, 12], demand: 4, bottleneck: '工程经验不足，对生产环境没概念', skills: ['Java/Python/Go', 'MySQL', '数据结构', 'Git'], certs: [] },
       year1: { title: '初级后端工程师', salary: [12, 18], demand: 4, bottleneck: '独立负责模块能力弱，需要老人带', skills: ['Spring Boot/Django', 'Redis', '消息队列', 'Linux'], certs: [] },
       year2: { title: '中级后端工程师', salary: [18, 28], demand: 4, bottleneck: '高并发、分布式系统经验不足', skills: ['微服务', '分布式', 'Docker', '性能调优'], certs: [] },
-      year3: { title: '高级后端工程师', salary: [28, 45], demand: 3, bottleneck: '架构设计与跨团队协作是天花板', skills: ['架构设计', '高并发', 'K8s', '技术选型'], certs: [] },
+      year3: { title: '高级后端工程师', salary: [25, 38], demand: 3, bottleneck: '架构设计与跨团队协作是天花板', skills: ['架构设计', '高并发', 'K8s', '技术选型'], certs: [] },
     },
   },
   {
@@ -84,11 +84,11 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '应届硕/博', salary: [8, 15], demand: 2, bottleneck: '学历门槛卡硕士起步，论文/竞赛/实习缺一不可', skills: ['Python', '数学', '机器学习', '深度学习'], certs: [] },
       year1: { title: '算法工程师(入门)', salary: [20, 35], demand: 2, bottleneck: '岗位集中头部大厂，调参侠易被淘汰', skills: ['PyTorch', 'CV/NLP方向', '工程化部署', '论文复现'], certs: [] },
       year2: { title: '算法工程师', salary: [30, 50], demand: 2, bottleneck: '业务价值证明难，纯算法 HC 收缩', skills: ['大模型', 'RAG', '业务建模', '分布式训练'], certs: [] },
-      year3: { title: '高级算法/Tech Lead', salary: [45, 80], demand: 2, bottleneck: '晋升看顶会论文与业务影响力', skills: ['算法架构', '团队管理', '业务落地', '前沿研究'], certs: [] },
+      year3: { title: '高级算法/Tech Lead', salary: [40, 65], demand: 2, bottleneck: '晋升看顶会论文与业务影响力', skills: ['算法架构', '团队管理', '业务落地', '前沿研究'], certs: [] },
     },
   },
   {
-    keywords: ['数据', '数据分析', '数据运营', 'bi', 'sql', '统计', '数据分析师'],
+    keywords: ['数据分析', '数据运营', 'bi', 'sql', '统计', '统计学', '数据分析师', '大数据', '数据挖掘', '商业分析'],
     industry: '互联网/数据',
     name: '数据分析师路线',
     summary: '业务向数据分析，门槛适中，跨行业通用',
@@ -106,11 +106,11 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '实习/应届分析助理', salary: [6, 10], demand: 4, bottleneck: '工具不熟练，对业务理解浅', skills: ['Excel', 'SQL', '统计学', 'Python基础'], certs: [] },
       year1: { title: '初级数据分析师', salary: [10, 16], demand: 4, bottleneck: '分析停留在描述层面，缺洞察', skills: ['SQL进阶', 'Python pandas', 'BI工具', 'AB实验'], certs: [] },
       year2: { title: '数据分析师', salary: [15, 24], demand: 4, bottleneck: '业务建模与因果推断能力不足', skills: ['用户增长', '指标体系', '数据建模', '可视化'], certs: [] },
-      year3: { title: '高级分析师/分析专家', salary: [22, 35], demand: 3, bottleneck: '战略影响力与跨部门推动是上限', skills: ['业务战略', '数据产品', '因果推断', '团队管理'], certs: [] },
+      year3: { title: '高级分析师/分析专家', salary: [20, 30], demand: 3, bottleneck: '战略影响力与跨部门推动是上限', skills: ['业务战略', '数据产品', '因果推断', '团队管理'], certs: [] },
     },
   },
   {
-    keywords: ['产品', '产品经理', 'pm', '互联网产品'],
+    keywords: ['产品经理', 'pm', '互联网产品', '产品策划', '产品规划', '需求分析'],
     industry: '互联网',
     name: '互联网产品经理路线',
     summary: '从产品助理到产品专家，重思维与沟通',
@@ -128,7 +128,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '产品助理/实习', salary: [6, 10], demand: 2, bottleneck: '缺乏完整项目经验，需求文档写不规范', skills: ['需求分析', 'Axure/Figma', '用户调研', 'Office'], certs: [] },
       year1: { title: '初级产品经理', salary: [12, 18], demand: 3, bottleneck: '能跟需求但无法独立定义产品方向', skills: ['PRD', '数据分析', '项目推进', '竞品分析'], certs: [] },
       year2: { title: '产品经理', salary: [18, 28], demand: 3, bottleneck: '对商业模式与增长理解不足', skills: ['产品规划', '增长', '商业化', 'AB实验'], certs: [] },
-      year3: { title: '高级产品经理', salary: [28, 45], demand: 2, bottleneck: '从 0 到 1 经验与业务结果决定上限', skills: ['战略拆解', '团队管理', '商业判断', '资源整合'], certs: [] },
+      year3: { title: '高级产品经理', salary: [25, 38], demand: 2, bottleneck: '从 0 到 1 经验与业务结果决定上限', skills: ['战略拆解', '团队管理', '商业判断', '资源整合'], certs: [] },
     },
   },
   {
@@ -150,7 +150,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '运营助理/实习', salary: [5, 8], demand: 4, bottleneck: '只会执行，不理解数据与策略', skills: ['文案', 'Excel', '社群', 'Office'], certs: [] },
       year1: { title: '初级运营', salary: [8, 13], demand: 4, bottleneck: '没有独立项目，数据结果不突出', skills: ['活动策划', '数据分析', '用户增长', '内容'], certs: [] },
       year2: { title: '运营专员/主管', salary: [12, 20], demand: 3, bottleneck: '策略能力与跨部门推动不足', skills: ['增长策略', '投放', '用户分层', '项目管理'], certs: [] },
-      year3: { title: '高级运营/运营经理', salary: [18, 30], demand: 3, bottleneck: '能否带团队、拿到业务结果是关键', skills: ['业务规划', '团队管理', '预算管理', '商业化'], certs: [] },
+      year3: { title: '高级运营/运营经理', salary: [16, 26], demand: 3, bottleneck: '能否带团队、拿到业务结果是关键', skills: ['业务规划', '团队管理', '预算管理', '商业化'], certs: [] },
     },
   },
   {
@@ -194,7 +194,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '实习/应届测试', salary: [6, 9], demand: 4, bottleneck: '只会点点点，缺乏代码能力', skills: ['测试理论', 'SQL', 'Linux', 'Python基础'], certs: ['ISTQB(可选)'] },
       year1: { title: '初级测试工程师', salary: [9, 14], demand: 4, bottleneck: '自动化能力薄弱', skills: ['Python/Java', '接口测试', 'Selenium', 'Jmeter'], certs: [] },
       year2: { title: '测试开发工程师', salary: [14, 22], demand: 4, bottleneck: '平台化与持续集成经验不足', skills: ['自动化框架', 'CI/CD', '性能测试', '代码审计'], certs: [] },
-      year3: { title: '高级测开/测试架构师', salary: [22, 35], demand: 3, bottleneck: '质量体系建设与架构能力是上限', skills: ['测试平台', '质量体系', 'DevOps', '架构设计'], certs: [] },
+      year3: { title: '高级测开/测试架构师', salary: [20, 30], demand: 3, bottleneck: '质量体系建设与架构能力是上限', skills: ['测试平台', '质量体系', 'DevOps', '架构设计'], certs: [] },
     },
   },
   {
@@ -216,11 +216,11 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '运维实习/应届', salary: [6, 10], demand: 3, bottleneck: '只懂基础命令，没接触过生产环境', skills: ['Linux', '网络', 'Shell', 'MySQL'], certs: [] },
       year1: { title: '初级运维工程师', salary: [10, 16], demand: 4, bottleneck: '自动化能力不足，靠手工操作', skills: ['Python/Go', 'Ansible', 'Docker', '监控'], certs: [] },
       year2: { title: '运维/DevOps 工程师', salary: [16, 26], demand: 4, bottleneck: 'K8s 与云原生深度不足', skills: ['Kubernetes', 'CI/CD', 'Terraform', '日志系统'], certs: ['CKA(可选)'] },
-      year3: { title: '高级 DevOps/SRE', salary: [25, 40], demand: 3, bottleneck: '架构与稳定性体系建设决定上限', skills: ['平台架构', 'SRE', '成本优化', '多活容灾'], certs: ['CKA/CKS'] },
+      year3: { title: '高级 DevOps/SRE', salary: [22, 34], demand: 3, bottleneck: '架构与稳定性体系建设决定上限', skills: ['平台架构', 'SRE', '成本优化', '多活容灾'], certs: ['CKA/CKS'] },
     },
   },
   {
-    keywords: ['ui', '设计', '交互', 'ux', '视觉', '平面'],
+    keywords: ['ui', 'ux', '交互', '视觉', '平面', 'ui设计', 'ux设计', '交互设计', '网页设计', '视觉设计', '艺术设计', '设计学'],
     industry: '互联网/设计',
     name: 'UI/UX 设计师路线',
     summary: '从视觉执行到产品设计师，作品集决定天花板',
@@ -238,7 +238,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '实习/应届设计', salary: [6, 10], demand: 3, bottleneck: '作品集单薄，缺乏完整项目', skills: ['Figma', 'PS', 'Sketch', '设计规范'], certs: [] },
       year1: { title: '初级 UI 设计师', salary: [10, 15], demand: 3, bottleneck: '只画界面不懂交互与业务', skills: ['Figma进阶', '交互设计', '动效', '设计系统'], certs: [] },
       year2: { title: 'UI/UX 设计师', salary: [14, 22], demand: 3, bottleneck: '商业思维与数据驱动不足', skills: ['用户研究', '产品思维', '数据设计', 'B端设计'], certs: [] },
-      year3: { title: '高级设计师/设计专家', salary: [20, 35], demand: 2, bottleneck: '从 0 到 1 搭建设计体系的能力稀缺', skills: ['设计体系', '团队管理', '品牌', 'AI设计工具'], certs: [] },
+      year3: { title: '高级设计师/设计专家', salary: [18, 30], demand: 2, bottleneck: '从 0 到 1 搭建设计体系的能力稀缺', skills: ['设计体系', '团队管理', '品牌', 'AI设计工具'], certs: [] },
     },
   },
   {
@@ -260,7 +260,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '应届/实习', salary: [7, 11], demand: 4, bottleneck: '只有课程项目，缺真实硬件调试经验', skills: ['C/C++', '单片机', '电路基础', 'Linux'], certs: [] },
       year1: { title: '初级嵌入式工程师', salary: [11, 17], demand: 4, bottleneck: '能写驱动但系统观不足', skills: ['STM32', 'RTOS', '驱动开发', '通信协议'], certs: [] },
       year2: { title: '嵌入式工程师', salary: [16, 25], demand: 4, bottleneck: 'Linux 内核 / 性能优化能力不足', skills: ['Linux内核', 'ARM', '网络协议', '系统优化'], certs: [] },
-      year3: { title: '高级嵌入式工程师', salary: [24, 38], demand: 3, bottleneck: '系统架构与跨硬件平台能力是上限', skills: ['架构设计', 'AIoT', '安全', '团队管理'], certs: [] },
+      year3: { title: '高级嵌入式工程师', salary: [22, 33], demand: 3, bottleneck: '系统架构与跨硬件平台能力是上限', skills: ['架构设计', 'AIoT', '安全', '团队管理'], certs: [] },
     },
   },
   {
@@ -304,7 +304,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '电商运营助理', salary: [5, 8], demand: 5, bottleneck: '只会上架改价，不懂流量与转化', skills: ['Excel', '平台后台', '客服沟通', '商品上架'], certs: [] },
       year1: { title: '电商运营专员', salary: [8, 13], demand: 5, bottleneck: '会开直通车但不懂 ROI 优化', skills: ['直通车/千川', '数据分析', '活动报名', '详情页优化'], certs: [] },
       year2: { title: '电商运营主管', salary: [13, 22], demand: 4, bottleneck: '能带单品但带不动整店 GMV', skills: ['品类规划', '投放优化', '直播策划', '供应链协同'], certs: [] },
-      year3: { title: '电商运营经理/总监', salary: [20, 40], demand: 3, bottleneck: '从生意视角做品牌与多平台布局', skills: ['品牌运营', '多平台布局', '团队管理', '利润核算'], certs: [] },
+      year3: { title: '电商运营经理/总监', salary: [18, 32], demand: 3, bottleneck: '从生意视角做品牌与多平台布局', skills: ['品牌运营', '多平台布局', '团队管理', '利润核算'], certs: [] },
     },
   },
   {
@@ -325,8 +325,9 @@ export const RAW_ROUTES: RawRoute[] = [
     stages: {
       current: { title: '直播助理/场控', salary: [5, 9], demand: 5, bottleneck: '只做执行，不懂选品与脚本', skills: ['直播流程', '场控', '短视频剪辑', 'Excel'], certs: [] },
       year1: { title: '直播运营/副播', salary: [9, 15], demand: 4, bottleneck: '能跟播但不能独立操盘', skills: ['选品', '脚本撰写', '投流千川', '数据复盘'], certs: [] },
-      year2: { title: '直播操盘手/主播', salary: [15, 30], demand: 3, bottleneck: '单品跑通但复制不到矩阵', skills: ['直播间操盘', '供应链', '达人对接', '团队搭建'], certs: [] },
-      year3: { title: '直播负责人/头部主播', salary: [30, 80], demand: 2, bottleneck: '能否做成品牌或稳定矩阵', skills: ['品牌自播', '多账号矩阵', '供应链管理', '商业谈判'], certs: [] },
+      year2: { title: '直播操盘手/主播', salary: [14, 26], demand: 3, bottleneck: '单品跑通但复制不到矩阵', skills: ['直播间操盘', '供应链', '达人对接', '团队搭建'], certs: [] },
+      // 提成/带货收入方差极大，区间上限对应稳定起量的操盘手/主播（非头部 lottery 收入）
+      year3: { title: '直播负责人/头部主播', salary: [25, 60], demand: 2, bottleneck: '能否做成品牌或稳定矩阵', skills: ['品牌自播', '多账号矩阵', '供应链管理', '商业谈判'], certs: [] },
     },
   },
   {
@@ -348,7 +349,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '市场/新媒体助理', salary: [5, 9], demand: 4, bottleneck: '只会写稿排版，不懂投放与转化', skills: ['文案', '公众号/小红书', 'Office', 'PS基础'], certs: [] },
       year1: { title: '市场专员', salary: [9, 14], demand: 4, bottleneck: '能执行活动但算不清 ROI', skills: ['活动策划', '信息流投放', '数据分析', '短视频'], certs: [] },
       year2: { title: '市场/品牌经理', salary: [14, 24], demand: 3, bottleneck: '能操盘 campaign 但缺品牌战略视角', skills: ['品牌策略', '整合营销', '预算管理', '供应商管理'], certs: [] },
-      year3: { title: '高级市场经理/市场总监', salary: [22, 45], demand: 3, bottleneck: '能否用商业结果证明品牌价值', skills: ['品牌战略', '生意增长', '团队管理', '跨部门协同'], certs: [] },
+      year3: { title: '高级市场经理/市场总监', salary: [20, 36], demand: 3, bottleneck: '能否用商业结果证明品牌价值', skills: ['品牌战略', '生意增长', '团队管理', '跨部门协同'], certs: [] },
     },
   },
   {
@@ -370,7 +371,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '人事/行政助理', salary: [5, 8], demand: 4, bottleneck: '只做入离职等事务性工作', skills: ['Office', '劳动法基础', '沟通', '考勤'], certs: ['企业人力资源管理师(可选)'] },
       year1: { title: 'HR 专员', salary: [8, 13], demand: 4, bottleneck: '停留在招聘执行，不懂业务', skills: ['招聘', '入离职', '员工关系', 'Excel'], certs: [] },
       year2: { title: 'HRBP/招聘经理', salary: [13, 22], demand: 3, bottleneck: '不能从业务视角解决组织问题', skills: ['HRBP', '薪酬绩效', '组织诊断', '面试甄选'], certs: [] },
-      year3: { title: 'HR 经理/HRD', salary: [20, 38], demand: 3, bottleneck: '组织设计与高管影响力', skills: ['组织发展', '人才战略', '预算', '跨部门推动'], certs: ['中级/高级人力资源管理师'] },
+      year3: { title: 'HR 经理/HRD', salary: [17, 28], demand: 3, bottleneck: '组织设计与高管影响力', skills: ['组织发展', '人才战略', '预算', '跨部门推动'], certs: ['中级/高级人力资源管理师'] },
     },
   },
   {
@@ -392,7 +393,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '出纳/会计助理', salary: [5, 8], demand: 4, bottleneck: '只会录凭证，不懂业务', skills: ['Excel', '会计基础', '财务软件', 'Office'], certs: ['初级会计'] },
       year1: { title: '会计/审计助理', salary: [8, 13], demand: 4, bottleneck: '只能做单一模块', skills: ['全盘账务', '税务申报', '审计流程', 'Excel函数'], certs: ['初级会计', 'CPA(备考)'] },
       year2: { title: '总账会计/审计员', salary: [13, 22], demand: 3, bottleneck: '缺财务分析与业务视角', skills: ['财务报表', '财务分析', '预算', '内控'], certs: ['CPA/中级会计'] },
-      year3: { title: '财务主管/财务经理', salary: [20, 38], demand: 3, bottleneck: '从记账转向经营决策支持', skills: ['财务管理', '税务筹划', '经营分析', '团队管理'], certs: ['CPA/中级会计/ACCA'] },
+      year3: { title: '财务主管/财务经理', salary: [17, 30], demand: 3, bottleneck: '从记账转向经营决策支持', skills: ['财务管理', '税务筹划', '经营分析', '团队管理'], certs: ['CPA/中级会计/ACCA'] },
     },
   },
   {
@@ -414,7 +415,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '策划/运营助理', salary: [6, 10], demand: 3, bottleneck: '只有游戏热情，缺乏文档与数值能力', skills: ['Excel', '游戏拆解', '文档撰写', 'Office'], certs: [] },
       year1: { title: '初级执行策划/运营', salary: [10, 16], demand: 3, bottleneck: '能配表但无法独立设计玩法系统', skills: ['数值基础', '关卡/系统设计', 'SQL', 'Axure'], certs: [] },
       year2: { title: '系统/数值策划', salary: [16, 26], demand: 3, bottleneck: '设计缺乏数据验证，玩家思维不足', skills: ['数值建模', '数据分析', '商业化设计', '用户研究'], certs: [] },
-      year3: { title: '资深策划/主策划', salary: [25, 45], demand: 2, bottleneck: '能否主导完整玩法循环并对留存付费负责', skills: ['玩法主导', '项目管理', '跨部门协作', '商业判断'], certs: [] },
+      year3: { title: '资深策划/主策划', salary: [22, 38], demand: 2, bottleneck: '能否主导完整玩法循环并对留存付费负责', skills: ['玩法主导', '项目管理', '跨部门协作', '商业判断'], certs: [] },
     },
   },
   {
@@ -429,6 +430,7 @@ export const RAW_ROUTES: RawRoute[] = [
     ceiling: '教研主管 / 学科带头人 / 分校负责人',
     pitfalls: [
       '考编竞争激烈，一线城市教师岗报录比常年几十比一',
+      '普通话证书（语文/幼教需二甲）+ 教师资格证是考教师编的报名硬门槛，至少提前半年到一年启动考证',
       '教培行业受政策影响大，选择机构时优先看现金流和合规性',
       '看似有寒暑假，实际备课、家校沟通、招生任务并不轻松',
     ],
@@ -458,7 +460,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '实习/规培', salary: [3, 7], demand: 4, bottleneck: '学历与规培是硬门槛', skills: ['医学基础', '临床操作', '病历书写', '医患沟通'], certs: ['执业医师/护士资格(备考)'] },
       year1: { title: '住院医师/初级药师', salary: [8, 13], demand: 4, bottleneck: '临床经验不足，独立处理问题能力弱', skills: ['常见病诊疗', '医嘱开具', '急救处理', '文献检索'], certs: ['执业医师证', '职称初级'] },
       year2: { title: '主治医师/医药专员', salary: [13, 22], demand: 3, bottleneck: '专科深度与科研论文不足', skills: ['专科技能', '临床研究', '医患沟通', '带教实习'], certs: ['职称中级', 'GCP'] },
-      year3: { title: '主治医师/药企医学经理', salary: [20, 40], demand: 3, bottleneck: '科研成果、亚专科方向与职称晋升', skills: ['亚专科', '科研设计', '团队协作', '医药产品'], certs: ['职称中级/副高'] },
+      year3: { title: '主治医师/药企医学经理', salary: [17, 32], demand: 3, bottleneck: '科研成果、亚专科方向与职称晋升', skills: ['亚专科', '科研设计', '团队协作', '医药产品'], certs: ['职称中级/副高'] },
     },
   },
   {
@@ -484,7 +486,7 @@ export const RAW_ROUTES: RawRoute[] = [
     },
   },
   {
-    keywords: ['建筑', '土木', '施工', '工程', '造价', 'bim', '设计院', '结构', '建筑设计', '建造师', '监理'],
+    keywords: ['建筑', '土木', '施工', '造价', 'bim', '设计院', '建筑设计', '建造师', '监理', '建筑工程', '土木工程', '工程管理', '结构工程', '房地产'],
     industry: '建筑/房地产',
     name: '建筑/土木工程路线',
     summary: '从施工员或设计助理起步，向项目经理或注册建造师发展',
@@ -502,7 +504,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '施工员/设计助理', salary: [5, 8], demand: 3, bottleneck: '只有图纸知识，缺现场经验', skills: ['CAD', '工程制图', '测量', 'Office'], certs: ['二级建造师(备考)'] },
       year1: { title: '助理工程师/造价员', salary: [8, 13], demand: 3, bottleneck: '能画图但不懂施工工艺与成本', skills: ['BIM(Revit)', '施工工艺', '广联达', '规范'], certs: ['二级建造师', 'BIM等级'] },
       year2: { title: '工程师/专业负责人', salary: [13, 22], demand: 3, bottleneck: '独立负责子项能力不足', skills: ['项目管理', '专业协调', '成本控制', '招投标'], certs: ['一级建造师(备考)'] },
-      year3: { title: '项目工程师/专业主管', salary: [20, 35], demand: 3, bottleneck: '能否独立负责全项目并控质量进度成本', skills: ['全项目管理', '合同管理', '团队协调', '风险控制'], certs: ['一级建造师', '职称中级'] },
+      year3: { title: '项目工程师/专业主管', salary: [17, 28], demand: 3, bottleneck: '能否独立负责全项目并控质量进度成本', skills: ['全项目管理', '合同管理', '团队协调', '风险控制'], certs: ['一级建造师', '职称中级'] },
     },
   },
   {
@@ -546,7 +548,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '助理工程师/技术员', salary: [7, 11], demand: 5, bottleneck: '缺乏材料与工艺实操经验', skills: ['材料基础', '电化学', 'CAD', '实验设计'], certs: [] },
       year1: { title: '工艺/研发工程师', salary: [11, 17], demand: 5, bottleneck: '能做实验但独立解决产线问题能力弱', skills: ['电芯工艺', 'BMS基础', 'DOE', 'Minitab'], certs: ['六西格玛绿带'] },
       year2: { title: '电芯/系统工程师', salary: [16, 26], demand: 4, bottleneck: '系统集成与失效分析能力不足', skills: ['Pack设计', '热管理', '失效分析', 'DFMEA'], certs: ['PMP(可选)'] },
-      year3: { title: '资深/主管工程师', salary: [24, 40], demand: 4, bottleneck: '能否主导新产品导入并解决量产疑难', skills: ['产品开发', '项目管理', '跨部门协同', '技术攻关'], certs: ['职称中级', '六西格玛黑带'] },
+      year3: { title: '资深/主管工程师', salary: [22, 34], demand: 4, bottleneck: '能否主导新产品导入并解决量产疑难', skills: ['产品开发', '项目管理', '跨部门协同', '技术攻关'], certs: ['职称中级', '六西格玛黑带'] },
     },
   },
   {
@@ -568,7 +570,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '外贸助理/运营助理', salary: [5, 8], demand: 4, bottleneck: '英语函电不熟，不了解平台规则', skills: ['英语读写', 'Excel', '平台后台', '外贸流程'], certs: [] },
       year1: { title: '初级外贸/亚马逊运营', salary: [8, 13], demand: 4, bottleneck: '能跟订单但独立开发客户/选品能力弱', skills: ['客户开发', '选品分析', 'PPC广告', 'Listing优化'], certs: ['BEC中级(可选)'] },
       year2: { title: '业务骨干/站点运营', salary: [13, 22], demand: 4, bottleneck: '供应链整合和广告 ROI 优化能力不足', skills: ['广告优化', '供应链管理', '海外社媒', '独立站'], certs: [] },
-      year3: { title: '业务主管/跨境负责人', salary: [20, 40], demand: 3, bottleneck: '能否带团队、操盘多站点并对利润负责', skills: ['多站点运营', '品牌出海', '团队管理', '利润核算'], certs: [] },
+      year3: { title: '业务主管/跨境负责人', salary: [17, 32], demand: 3, bottleneck: '能否带团队、操盘多站点并对利润负责', skills: ['多站点运营', '品牌出海', '团队管理', '利润核算'], certs: [] },
     },
   },
   {
@@ -590,7 +592,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '物流/采购/计划助理', salary: [5, 8], demand: 4, bottleneck: '只做单据，不理解端到端流程', skills: ['Excel', 'ERP基础', '沟通', 'Office'], certs: [] },
       year1: { title: '专员(采购/计划/物流)', salary: [8, 13], demand: 4, bottleneck: '能跟单但不会数据分析和异常处理', skills: ['ERP(SAP/用友)', '数据分析', '供应商沟通', '库存管理'], certs: ['CPPM/采购师(可选)'] },
       year2: { title: '主管/资深专员', salary: [12, 20], demand: 4, bottleneck: '策略采购与产销协调能力不足', skills: ['供应商管理', '需求预测', '成本分析', '流程优化'], certs: ['CPIM(可选)'] },
-      year3: { title: '供应链/采购经理', salary: [18, 32], demand: 3, bottleneck: '端到端规划、跨部门协同与团队管理', skills: ['供应链规划', '谈判', '风险管理', '团队管理'], certs: ['CSCP/CPIM'] },
+      year3: { title: '供应链/采购经理', salary: [16, 26], demand: 3, bottleneck: '端到端规划、跨部门协同与团队管理', skills: ['供应链规划', '谈判', '风险管理', '团队管理'], certs: ['CSCP/CPIM'] },
     },
   },
   {
@@ -605,11 +607,12 @@ export const RAW_ROUTES: RawRoute[] = [
     ceiling: '处级干部 / 单位中层 / 业务骨干',
     pitfalls: [
       '热门岗位报录比极高，全职备考有经济与心理双重压力',
+      '报考年龄上限已放宽至 38 周岁（应届硕博可放宽至 42 周岁），但超龄前考试次数有限，转行备考要趁早规划',
       '基层岗位加班、迎检、驻村任务并不轻松，别被"朝九晚五"误导',
       '服务期内不得辞职/考走，异地基层岗入职前务必想清楚',
     ],
     stages: {
-      current: { title: '备考期', salary: [0, 0], demand: 2, bottleneck: '行测/申论基础薄弱，没有系统备考', skills: ['行测', '申论', '时政', '面试表达'], certs: [] },
+      current: { title: '备考期', salary: [0, 0], demand: 2, bottleneck: '行测/申论基础薄弱，没有系统备考', skills: ['行测', '申论', '政治理论', '时政', '面试表达'], certs: [] },
       year1: { title: '试用期/基层岗', salary: [7, 11], demand: 3, bottleneck: '不熟悉机关工作方式，公文写作能力弱', skills: ['公文写作', '办公软件', '政策理解', '群众沟通'], certs: [] },
       year2: { title: '科员/业务岗', salary: [9, 14], demand: 3, bottleneck: '业务不熟练，写材料和协调能力不足', skills: ['材料撰写', '业务办理', '调研能力', '应急处理'], certs: ['职称初级'] },
       year3: { title: '副科级/业务骨干', salary: [12, 20], demand: 3, bottleneck: '晋升受编制、职数与机遇限制', skills: ['统筹协调', '政策研究', '团队带教', '综合文稿'], certs: ['职称中级'] },
@@ -634,7 +637,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '内容助理/实习编辑', salary: [5, 8], demand: 4, bottleneck: '只会搬运排版，没有选题与网感', skills: ['文案', '排版', 'PS/剪映基础', 'Office'], certs: [] },
       year1: { title: '新媒体运营/编辑', salary: [8, 13], demand: 4, bottleneck: '能写稿但不会做爆款和涨粉', skills: ['选题策划', '短视频', '数据分析', '平台规则'], certs: [] },
       year2: { title: '内容策划/账号负责人', salary: [13, 22], demand: 3, bottleneck: '单条爆款容易，稳定涨粉和变现难', skills: ['账号定位', '内容矩阵', '商业化', '投放'], certs: [] },
-      year3: { title: '内容主管/IP 主理人', salary: [20, 45], demand: 3, bottleneck: '能否搭建稳定内容生产体系并变现', skills: ['内容体系', '团队管理', '商业变现', '品牌合作'], certs: [] },
+      year3: { title: '内容主管/IP 主理人', salary: [18, 35], demand: 3, bottleneck: '能否搭建稳定内容生产体系并变现', skills: ['内容体系', '团队管理', '商业变现', '品牌合作'], certs: [] },
     },
   },
   {
@@ -656,11 +659,12 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '剪辑/编导助理', salary: [5, 9], demand: 4, bottleneck: '只会软件操作，没有叙事和节奏能力', skills: ['PR/AE', '拍摄', '脚本', 'PS'], certs: [] },
       year1: { title: '剪辑师/编导', salary: [9, 15], demand: 4, bottleneck: '能完成成片但创意与客户沟通能力弱', skills: ['达芬奇调色', '叙事结构', '分镜', '客户沟通'], certs: [] },
       year2: { title: '资深剪辑/编导', salary: [14, 24], demand: 3, bottleneck: '独立把控项目风格与预算能力不足', skills: ['项目主导', '创意策划', '团队协作', '商业提案'], certs: [] },
-      year3: { title: '导演/制作主管', salary: [20, 45], demand: 2, bottleneck: '能否拿到项目、带团队并对最终作品负责', skills: ['导演能力', '制片管理', '商务谈判', '团队搭建'], certs: [] },
+      year3: { title: '导演/制作主管', salary: [18, 35], demand: 2, bottleneck: '能否拿到项目、带团队并对最终作品负责', skills: ['导演能力', '制片管理', '商务谈判', '团队搭建'], certs: [] },
     },
   },
   {
-    keywords: ['芯片', '半导体', 'ic', '验证', '数字前端', '模拟', '版图', 'fpga', '集成电路', '流片'],
+    // 注意：不要用「数字前端」这类词——它包含「前端」，会被前端/软件方向的关键词误命中
+    keywords: ['芯片', '半导体', 'ic', '验证', '数字ic', '模拟ic', '版图', 'fpga', '集成电路', '流片', 'rtl'],
     industry: '半导体/芯片',
     name: '芯片/IC 设计工程师路线',
     summary: '高门槛高回报方向，从验证或版图工程师做起，成长为 IC 设计专家',
@@ -678,7 +682,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '验证/版图助理', salary: [10, 16], demand: 4, bottleneck: '只有课本知识，缺真实流片项目经验', skills: ['Verilog/SystemVerilog', '数字电路', 'UVM', 'Linux'], certs: [] },
       year1: { title: '初级验证/版图工程师', salary: [16, 25], demand: 4, bottleneck: '能跑用例但独立搭建验证平台能力弱', skills: ['UVM', '断言', 'Perl/Tcl', '时序分析'], certs: [] },
       year2: { title: 'IC 设计/验证工程师', salary: [25, 40], demand: 4, bottleneck: '架构理解与复杂模块设计经验不足', skills: ['架构设计', '低功耗', '形式验证', 'DFT'], certs: [] },
-      year3: { title: '资深工程师/专家', salary: [35, 60], demand: 3, bottleneck: '能否主导关键模块并对良率/性能负责', skills: ['架构主导', '跨团队协作', '流片经验', '技术攻关'], certs: [] },
+      year3: { title: '资深工程师/专家', salary: [30, 50], demand: 3, bottleneck: '能否主导关键模块并对良率/性能负责', skills: ['架构主导', '跨团队协作', '流片经验', '技术攻关'], certs: [] },
     },
   },
   {
@@ -766,7 +770,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '投放助理', salary: [5, 8], demand: 4, bottleneck: '只会调价建计划，不懂人群与素材', skills: ['Excel', '平台后台', '基础数据', '文案'], certs: [] },
       year1: { title: '初级投手', salary: [8, 13], demand: 4, bottleneck: '能跑计划但不会做素材策略和人群分析', skills: ['直通车/千川', '人群标签', '数据分析', '素材策划'], certs: [] },
       year2: { title: '投放专员/优化师', salary: [13, 22], demand: 4, bottleneck: '单品能跑赢，但全盘预算分配和多平台能力不足', skills: ['多平台投放', 'ROI优化', 'A/B测试', '预算管理'], certs: [] },
-      year3: { title: '投放主管/增长负责人', salary: [20, 40], demand: 3, bottleneck: '能否用增长策略带团队、对整体生意负责', skills: ['增长策略', '团队管理', '商业分析', '内容+投流协同'], certs: [] },
+      year3: { title: '投放主管/增长负责人', salary: [17, 30], demand: 3, bottleneck: '能否用增长策略带团队、对整体生意负责', skills: ['增长策略', '团队管理', '商业分析', '内容+投流协同'], certs: [] },
     },
   },
   {
@@ -810,7 +814,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '产品助理/运营专员', salary: [6, 9], demand: 3, bottleneck: '对电商业务链路理解浅，文档能力弱', skills: ['需求分析', 'Axure/Figma', '数据分析', 'Office'], certs: [] },
       year1: { title: '初级电商产品', salary: [11, 17], demand: 3, bottleneck: '能跟需求但无法独立设计复杂交易流程', skills: ['交易链路', 'PRD', '原型设计', '项目推进'], certs: [] },
       year2: { title: '电商产品经理', salary: [17, 28], demand: 3, bottleneck: '对营销、供应链等中后台纵深不足', skills: ['营销产品', '供应链系统', '数据产品', '跨团队协作'], certs: [] },
-      year3: { title: '高级产品/产品专家', salary: [28, 45], demand: 2, bottleneck: '商业判断与从 0 到 1 经验决定上限', skills: ['产品战略', '商业模型', '团队管理', '资源整合'], certs: [] },
+      year3: { title: '高级产品/产品专家', salary: [24, 36], demand: 2, bottleneck: '商业判断与从 0 到 1 经验决定上限', skills: ['产品战略', '商业模型', '团队管理', '资源整合'], certs: [] },
     },
   },
   {
@@ -876,7 +880,7 @@ export const RAW_ROUTES: RawRoute[] = [
       current: { title: '风控助理/信审助理', salary: [5, 8], demand: 3, bottleneck: '不熟悉业务规则，只能机械审件', skills: ['金融基础', 'Excel', '风险意识', '沟通'], certs: ['银行从业'] },
       year1: { title: '信审/风控专员', salary: [9, 14], demand: 4, bottleneck: '只会按规则审件，不懂模型和策略', skills: ['信贷政策', '风险识别', 'SQL基础', '反欺诈'], certs: ['FRM一级(可选)'] },
       year2: { title: '风控策略/合规专员', salary: [14, 22], demand: 3, bottleneck: '策略优化与跨部门沟通能力不足', skills: ['风控建模', '策略调优', '合规管理', '数据分析'], certs: ['FRM二级', 'CPA(可选)'] },
-      year3: { title: '风控主管/合规经理', salary: [20, 35], demand: 3, bottleneck: '能否主导风控体系或合规框架搭建', skills: ['风控体系', '团队管理', '监管沟通', '业务决策'], certs: ['FRM/CFA/CPA'] },
+      year3: { title: '风控主管/合规经理', salary: [18, 28], demand: 3, bottleneck: '能否主导风控体系或合规框架搭建', skills: ['风控体系', '团队管理', '监管沟通', '业务决策'], certs: ['FRM/CFA/CPA'] },
     },
   },
   {
@@ -895,10 +899,12 @@ export const RAW_ROUTES: RawRoute[] = [
       'PPT 和 Excel 只是基本功，真正的壁垒是行业认知和客户信任',
     ],
     stages: {
-      current: { title: '研究助理/实习分析员', salary: [8, 13], demand: 3, bottleneck: '缺乏研究框架，只能做信息搜集', skills: ['Excel', 'PPT', '桌面研究', '数据整理'], certs: [] },
-      year1: { title: '分析师/助理顾问', salary: [15, 25], demand: 3, bottleneck: '能做模块但无法独立负责完整项目', skills: ['行业分析', '财务建模', '访谈技巧', 'PPT 汇报'], certs: ['CFA 一级(可选)'] },
-      year2: { title: '高级分析师/顾问', salary: [22, 40], demand: 3, bottleneck: '独立带领项目、与客户高层对话能力不足', skills: ['项目管理', '客户沟通', '假设构建', '商业判断'], certs: ['CFA 二级/MBA(可选)'] },
-      year3: { title: '项目经理/研究总监', salary: [35, 70], demand: 2, bottleneck: '客户资源与独立打单能力决定上限', skills: ['业务拓展', '团队管理', '行业声誉', '战略洞察'], certs: [] },
+      // 头部 MBB/顶级咨询集中在北京上海；新一线锚点取二线咨询/四大咨询/行研口径，
+      // 一线经城市系数 1.15 折算后仍覆盖头部机构水平
+      current: { title: '研究助理/实习分析员', salary: [7, 11], demand: 3, bottleneck: '缺乏研究框架，只能做信息搜集', skills: ['Excel', 'PPT', '桌面研究', '数据整理'], certs: [] },
+      year1: { title: '分析师/助理顾问', salary: [12, 20], demand: 3, bottleneck: '能做模块但无法独立负责完整项目', skills: ['行业分析', '财务建模', '访谈技巧', 'PPT 汇报'], certs: ['CFA 一级(可选)'] },
+      year2: { title: '高级分析师/顾问', salary: [18, 32], demand: 3, bottleneck: '独立带领项目、与客户高层对话能力不足', skills: ['项目管理', '客户沟通', '假设构建', '商业判断'], certs: ['CFA 二级/MBA(可选)'] },
+      year3: { title: '项目经理/研究总监', salary: [26, 46], demand: 2, bottleneck: '客户资源与独立打单能力决定上限', skills: ['业务拓展', '团队管理', '行业声誉', '战略洞察'], certs: [] },
     },
   },
 ]

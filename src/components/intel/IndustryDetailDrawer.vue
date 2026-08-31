@@ -27,7 +27,8 @@ const trend = computed(() => (props.industry ? TREND_META[props.industry.trend] 
 function goSandbox() {
   if (!props.industry) return
   const ind = props.industry
-  // 把该赛道作为意向行业带入向导（去重）
+  // 把该赛道名称与核心标签作为「目标岗位/方向」意向词带入向导（去重）；
+  // 向导页目标岗位选择器支持自定义标签，这些行业词会作为关键词参与路线匹配
   const targets = new Set(profileStore.profile.targetIndustries)
   targets.add(ind.name)
   ind.tags
